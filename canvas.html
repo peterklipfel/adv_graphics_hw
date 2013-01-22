@@ -133,6 +133,40 @@
       return degrees * Math.PI / 180;
     }
 
+    var currentlyPressedKeys = {};
+
+    function handleKeyDown(event) {
+      currentlyPressedKeys[event.keyCode] = true;
+    }
+
+    function handleKeyUp(event) {
+      currentlyPressedKeys[event.keyCode] = false;
+    }
+
+    var zoom = -15;
+
+    var tilt = 0;
+    var spin = 0;
+
+    function handleKeys() {
+      if (currentlyPressedKeys[33]) {
+        // Page Up
+        zoom -= 0.1;
+      }
+      if (currentlyPressedKeys[34]) {
+        // Page Down
+        zoom += 0.1;
+      }
+      if (currentlyPressedKeys[38]) {
+        // Up cursor key
+        tilt += 0.1;
+      }
+      if (currentlyPressedKeys[40]) {
+        // Down cursor key
+        tilt -= 0.1;
+      }
+    }
+
     var pyramidVertexPositionBuffer;
     var pyramidVertexColorBuffer;
     var cubeVertexPositionBuffer;
@@ -278,9 +312,9 @@
 
       mat4.identity(mvMatrix);
 
-      mat4.translate(mvMatrix, [-1.5, 0.0, -7.0]);
+      mat4.translate(mvMatrix, [-1.5, 0.0, -7.0+zoom]);
       mvPushMatrix();
-      mat4.rotate(mvMatrix, degToRad(rPyramid), [0.1, 1, 0.3]);
+      mat4.rotate(mvMatrix, degToRad(rPyramid), [0.1, 1, 0.3+tilt]);
       	gl.bindBuffer(gl.ARRAY_BUFFER, pyramidVertexPositionBuffer);
 	      gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, pyramidVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 	      gl.bindBuffer(gl.ARRAY_BUFFER, pyramidVertexColorBuffer);
@@ -289,9 +323,9 @@
 	      gl.drawArrays(gl.TRIANGLES, 0, pyramidVertexPositionBuffer.numItems);
 	    mvPopMatrix();
 
-      mat4.translate(mvMatrix, [3.0, 0.0, 0.0]);
+      mat4.translate(mvMatrix, [3.0, 0.0, 0.0+zoom]);
       mvPushMatrix();
-      mat4.rotate(mvMatrix, degToRad(rCube), [1, 0.5, 0.25]);
+      mat4.rotate(mvMatrix, degToRad(rCube), [1, 0.5, 0.25+tilt]);
 	      gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
 	      gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 	      gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
@@ -316,6 +350,7 @@
 
     function tick(){
     	requestAnimFrame(tick);
+      handleKeys();
     	drawScene();
     	animate();
     }
@@ -328,6 +363,9 @@
 
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.enable(gl.DEPTH_TEST);
+
+      document.onkeydown = handleKeyDown;
+      document.onkeyup = handleKeyUp;
 
       tick();
     }
