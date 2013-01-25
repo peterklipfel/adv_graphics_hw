@@ -1,6 +1,7 @@
 <head>
 	<script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
-	<script type="text/javascript" src="webgl-utils.js"></script>
+  <script type="text/javascript" src="webgl-utils.js"></script>
+	<script type="text/javascript" src="three.min.js"></script>
 
 	<script id="shader-fs" type="x-shader/x-fragment">
     precision mediump float;
@@ -336,6 +337,30 @@
       mvPopMatrix();
     }
 
+    var videoTexture;
+    function initTextures() {
+      // ----------------------------------------------
+      // Implement this after textures have been added
+      // -----------------------------------------------
+      // video           = document.createElement('video');
+      // video.width     = 320;
+      // video.height    = 240;
+      // video.autoplay  = true;
+      // var hasUserMedia= navigator.webkitGetUserMedia ? true : false;
+      // videoTexture = new THREE.Texture( video );
+      // navigator.webkitGetUserMedia('video', function(stream){
+      //   video.src   = webkitURL.createObjectURL(stream);
+      // }, function(error){
+      //     console.log("Failed to get a stream due to", error);
+      //   });
+      // var material    = new THREE.MeshLambertMaterial({
+      //   map : videoTexture
+      // });
+      // if( video.readyState === video.HAVE_ENOUGH_DATA ){
+      //   videoTexture.needsUpdate = true;
+      // }
+    }
+
     var lastTime = 0;
     function animate() {
 	    var timeNow = new Date().getTime();
@@ -360,6 +385,7 @@
       initGL(canvas);
       initShaders();
       initBuffers();
+      initTextures();
 
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.enable(gl.DEPTH_TEST);
