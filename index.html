@@ -271,11 +271,10 @@
       mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
 
 
-      mat4.lookAt([zoom*Math.sin(th)*Math.cos(ph),zoom*Math.sin(ph), zoom*Math.cos(th)*Math.cos(ph)], [0.0, 0.0, 0.0], [0.0,1.0,0.0], mvMatrix)
+      mat4.lookAt([zoom*Math.sin(th)*Math.cos(ph),zoom*Math.sin(ph), zoom*Math.cos(th)*Math.cos(ph)], [0.0, 0.0, 0.0], [0.0,Math.cos(ph),0.0], mvMatrix)
 
-      // mat4.translate(mvMatrix, [0.0, 0.0, 0.0]);
       mvPushMatrix();
-      // mat4.rotate(mvMatrix, degToRad(rCube), [1, 0.5, 0.25+tilt]);
+      mat4.rotate(mvMatrix, degToRad(rCube), [1, 0.5, 0.25+tilt]);
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
