@@ -147,7 +147,9 @@
     var zoom = -15;
 
     var tilt = 0;
-    var spin = 0;
+    var spin = 0
+    var th = 0;
+    var ph = 0;
 
     function handleKeys() {
       if (currentlyPressedKeys[33]) {
@@ -159,12 +161,20 @@
         zoom += 0.1;
       }
       if (currentlyPressedKeys[38]) {
-        // Up cursor key
-        tilt += 0.1;
+        // Up Arrow key
+        ph += 0.1;
       }
       if (currentlyPressedKeys[40]) {
-        // Down cursor key
-        tilt -= 0.1;
+        // Down Arrow key
+        ph -= 0.1;
+      }
+      if (currentlyPressedKeys[39]) {
+        // Right Arrow Key
+        th -= 0.1;
+      }
+      if (currentlyPressedKeys[37]) {
+        // Left Arrow Key
+        th += 0.1;
       }
     }
 
@@ -260,11 +270,12 @@
 
       mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
 
-      mat4.identity(mvMatrix);
 
-      mat4.translate(mvMatrix, [0.0, 0.0, 0.0+zoom]);
+      mat4.lookAt([zoom*Math.sin(th)*Math.cos(ph),zoom*Math.sin(ph), zoom*Math.cos(th)*Math.cos(ph)], [0.0, 0.0, 0.0], [0.0,1.0,0.0], mvMatrix)
+
+      // mat4.translate(mvMatrix, [0.0, 0.0, 0.0]);
       mvPushMatrix();
-      mat4.rotate(mvMatrix, degToRad(rCube), [1, 0.5, 0.25+tilt]);
+      // mat4.rotate(mvMatrix, degToRad(rCube), [1, 0.5, 0.25+tilt]);
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
