@@ -1,37 +1,34 @@
 <head>
-	<script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+  <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
   <script type="text/javascript" src="webgl-utils.js"></script>
-	<script type="text/javascript" src="three.min.js"></script>
+  <script type="text/javascript" src="three.min.js"></script>
 
-	<script id="shader-fs" type="x-shader/x-fragment">
+  <script id="shader-fs" type="x-shader/x-fragment">
     precision mediump float;
 
-    varying vec2 vTextureCoord;
-
-    uniform sampler2D uSampler;
+    varying vec4 vColor;
 
     void main(void) {
-      gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+      gl_FragColor = vColor;
     }
   </script>
 
-	<script id="shader-vs" type="x-shader/x-vertex">
+  <script id="shader-vs" type="x-shader/x-vertex">
     attribute vec3 aVertexPosition;
-    attribute vec2 aTextureCoord;
+    attribute vec4 aVertexColor;
 
     uniform mat4 uMVMatrix;
     uniform mat4 uPMatrix;
 
-    varying vec2 vTextureCoord;
-
+    varying vec4 vColor;
 
     void main(void) {
-        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-        vTextureCoord = aTextureCoord;
+      gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+      vColor = aVertexColor;
     }
   </script>
 
-	<script type="text/javascript">
+  <script type="text/javascript">
 
     var gl;
     function initGL(canvas) {
@@ -42,7 +39,7 @@
       } catch (e) {
       }
       if (!gl) {
-	      alert("Could not initialise WebGL, sorry :-(");
+        alert("Could not initialise WebGL, sorry :-(");
       }
     }
 
@@ -103,12 +100,11 @@
       shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
       gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
-      shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
-      gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
+      shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
+      gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 
       shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
       shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-      shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
     }
 
 
@@ -117,24 +113,24 @@
     var mvMatrixStack = [];
 
     function mvPushMatrix() {
-	    var copy = mat4.create();
-	    mat4.set(mvMatrix, copy);
-	    mvMatrixStack.push(copy);
-  	}
+      var copy = mat4.create();
+      mat4.set(mvMatrix, copy);
+      mvMatrixStack.push(copy);
+    }
 
-  	function mvPopMatrix() {
-	    if (mvMatrixStack.length == 0) {
-	      throw "Invalid popMatrix!";
-	    }
-	    mvMatrix = mvMatrixStack.pop();
-  	}
+    function mvPopMatrix() {
+      if (mvMatrixStack.length == 0) {
+        throw "Invalid popMatrix!";
+      }
+      mvMatrix = mvMatrixStack.pop();
+    }
 
     function setMatrixUniforms() {
       gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
       gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
     }
 
-  	function degToRad(degrees) {
+    function degToRad(degrees) {
       return degrees * Math.PI / 180;
     }
 
@@ -173,8 +169,8 @@
     }
 
     var cubeVertexPositionBuffer;
+    var cubeVertexColorBuffer;
     var cubeVertexIndexBuffer;
-    var cubeVertexTextureCoordBuffer;
 
     function initBuffers() {
       cubeVertexPositionBuffer = gl.createBuffer();
@@ -220,48 +216,26 @@
       cubeVertexPositionBuffer.itemSize = 3;
       cubeVertexPositionBuffer.numItems = 24;
 
-      cubeVertexTextureCoordBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
-      var textureCoords = [
-         // Front face
-          0.0, 0.0,
-          1.0, 0.0,
-          1.0, 1.0,
-          0.0, 1.0,
-
-          // Back face
-          1.0, 0.0,
-          1.0, 1.0,
-          0.0, 1.0,
-          0.0, 0.0,
-
-          // Top face
-          0.0, 1.0,
-          0.0, 0.0,
-          1.0, 0.0,
-          1.0, 1.0,
-
-          // Bottom face
-          1.0, 1.0,
-          0.0, 1.0,
-          0.0, 0.0,
-          1.0, 0.0,
-
-          // Right face
-          1.0, 0.0,
-          1.0, 1.0,
-          0.0, 1.0,
-          0.0, 0.0,
-
-          // Left face
-          0.0, 0.0,
-          1.0, 0.0,
-          1.0, 1.0,
-          0.0, 1.0,
+      cubeVertexColorBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
+      colors = [
+        [1.0, 0.0, 0.0, 1.0],     // Front face
+        [1.0, 1.0, 0.0, 1.0],     // Back face
+        [0.0, 1.0, 0.0, 1.0],     // Top face
+        [1.0, 0.5, 0.5, 1.0],     // Bottom face
+        [1.0, 0.0, 1.0, 1.0],     // Right face
+        [0.0, 0.0, 1.0, 1.0],     // Left face
       ];
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
-      cubeVertexTextureCoordBuffer.itemSize = 2;
-      cubeVertexTextureCoordBuffer.numItems = 24;
+      var unpackedColors = [];
+      for (var i in colors) {
+        var color = colors[i];
+        for (var j=0; j < 4; j++) {
+          unpackedColors = unpackedColors.concat(color);
+        }
+      }
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(unpackedColors), gl.STATIC_DRAW);
+      cubeVertexColorBuffer.itemSize = 4;
+      cubeVertexColorBuffer.numItems = 24;
 
       cubeVertexIndexBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
@@ -289,80 +263,34 @@
       mat4.identity(mvMatrix);
 
       mat4.translate(mvMatrix, [0.0, 0.0, 0.0+zoom]);
+      mvPushMatrix();
       mat4.rotate(mvMatrix, degToRad(rCube), [1, 0.5, 0.25+tilt]);
-
-      gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
-      gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-      gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
-      gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, cubeVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, neheTexture);
-      gl.uniform1i(shaderProgram.samplerUniform, 0);
-
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
-      setMatrixUniforms();
-      gl.drawElements(gl.TRIANGLES, cubeVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-    }
-
-    function handleLoadedTexture(texture) {
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.bindTexture(gl.TEXTURE_2D, null);
-    }
-
-    // var videoTexture;
-    var neheTexture
-    function initTextures() {
-      neheTexture = gl.createTexture();
-      neheTexture.image = new Image();
-      neheTexture.image.onload = function() {
-        handleLoadedTexture(neheTexture)
-      }
-
-      neheTexture.image.src = "nehe.gif";
-      // ----------------------------------------------
-      // Implement this after textures have been added
-      // -----------------------------------------------
-      video           = document.createElement('video');
-      video.width     = 320;
-      video.height    = 240;
-      video.autoplay  = true;
-      var hasUserMedia= navigator.webkitGetUserMedia ? true : false;
-      videoTexture = new THREE.Texture( video );
-      navigator.webkitGetUserMedia({video: true}, function(stream){
-        video.src   = webkitURL.createObjectURL(stream);
-      }, function(error){
-          console.log("Failed to get a stream due to", error);
-        });
-      var material    = new THREE.MeshLambertMaterial({
-        map : videoTexture
-      });
-      if( video.readyState === video.HAVE_ENOUGH_DATA ){
-        videoTexture.needsUpdate = true;
-      }
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, cubeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
+        setMatrixUniforms();
+        gl.drawElements(gl.TRIANGLES, cubeVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+      mvPopMatrix();
     }
 
     var lastTime = 0;
     function animate() {
-	    var timeNow = new Date().getTime();
-	    if (lastTime != 0) {
-	      var elapsed = timeNow - lastTime;
+      var timeNow = new Date().getTime();
+      if (lastTime != 0) {
+        var elapsed = timeNow - lastTime;
 
-	      rCube -= (75 * elapsed) / 1000.0;
-	    }
-	    lastTime = timeNow;
+        rCube -= (75 * elapsed) / 1000.0;
+      }
+      lastTime = timeNow;
     }
 
     function tick(){
-    	requestAnimFrame(tick);
+      requestAnimFrame(tick);
       handleKeys();
-    	drawScene();
-    	animate();
+      drawScene();
+      animate();
     }
 
     function startWebGL() {
@@ -370,7 +298,6 @@
       initGL(canvas);
       initShaders();
       initBuffers();
-      initTextures();
 
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.enable(gl.DEPTH_TEST);
@@ -382,9 +309,9 @@
     }
 
 
-	</script>
+  </script>
 </head>
 
 <body onload="startWebGL();">
-	<canvas id="helloWorld" width=800 height=800 />
+  <canvas id="helloWorld" width=800 height=800 />
 </body>
