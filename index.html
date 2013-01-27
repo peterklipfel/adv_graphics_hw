@@ -290,7 +290,7 @@
 
       mat4.translate(mvMatrix, [0.0, 0.0, 0.0+zoom]);
       mat4.rotate(mvMatrix, degToRad(rCube), [1, 0.5, 0.25+tilt]);
-      
+
       gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
       gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
@@ -328,23 +328,23 @@
       // ----------------------------------------------
       // Implement this after textures have been added
       // -----------------------------------------------
-      // video           = document.createElement('video');
-      // video.width     = 320;
-      // video.height    = 240;
-      // video.autoplay  = true;
-      // var hasUserMedia= navigator.webkitGetUserMedia ? true : false;
-      // videoTexture = new THREE.Texture( video );
-      // navigator.webkitGetUserMedia('video', function(stream){
-      //   video.src   = webkitURL.createObjectURL(stream);
-      // }, function(error){
-      //     console.log("Failed to get a stream due to", error);
-      //   });
-      // var material    = new THREE.MeshLambertMaterial({
-      //   map : videoTexture
-      // });
-      // if( video.readyState === video.HAVE_ENOUGH_DATA ){
-      //   videoTexture.needsUpdate = true;
-      // }
+      video           = document.createElement('video');
+      video.width     = 320;
+      video.height    = 240;
+      video.autoplay  = true;
+      var hasUserMedia= navigator.webkitGetUserMedia ? true : false;
+      videoTexture = new THREE.Texture( video );
+      navigator.webkitGetUserMedia({video: true}, function(stream){
+        video.src   = webkitURL.createObjectURL(stream);
+      }, function(error){
+          console.log("Failed to get a stream due to", error);
+        });
+      var material    = new THREE.MeshLambertMaterial({
+        map : videoTexture
+      });
+      if( video.readyState === video.HAVE_ENOUGH_DATA ){
+        videoTexture.needsUpdate = true;
+      }
     }
 
     var lastTime = 0;
