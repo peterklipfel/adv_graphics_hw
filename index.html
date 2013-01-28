@@ -39,7 +39,7 @@
       } catch (e) {
       }
       if (!gl) {
-        alert("Could not initialise WebGL, sorry :-(");
+        alert("Could not initialise WebGL");
       }
     }
 
@@ -180,7 +180,7 @@
       }
       if(currentlyPressedKeys[87]){
         // W Key
-        cubeZ+=1.0;
+        cubeZ-=1.0;
       }
       if(currentlyPressedKeys[83]){
         // S Key
@@ -192,7 +192,7 @@
       }
        if(currentlyPressedKeys[68]){
         // D Key
-        cubeX+=1.0;
+        cubeX-=1.0;
       }
       if(currentlyPressedKeys[81]){
         // Q Key
@@ -200,7 +200,7 @@
       }
        if(currentlyPressedKeys[69]){
         // E Key
-        cubeY+=1.0;
+        cubeY-=1.0;
       }
     }
 
@@ -247,8 +247,8 @@
         -1.0, -1.0,  1.0,
         -1.0,  1.0,  1.0,
         -1.0,  1.0, -1.0,
-      ];
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+      ]
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
       cubeVertexPositionBuffer.itemSize = 3;
       cubeVertexPositionBuffer.numItems = 24;
 
@@ -319,6 +319,45 @@
 
         rCube -= (75 * elapsed) / 1000.0;
       }
+      gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
+      vertices = vertices = [
+        // Front face
+        -1.0+cubeX, -1.0+cubeY,  1.0+cubeZ,
+         1.0+cubeX, -1.0+cubeY,  1.0+cubeZ,
+         1.0+cubeX,  1.0+cubeY,  1.0+cubeZ,
+        -1.0+cubeX,  1.0+cubeY,  1.0+cubeZ,
+
+        // Back face
+        -1.0+cubeX, -1.0+cubeY, -1.0+cubeZ,
+        -1.0+cubeX,  1.0+cubeY, -1.0+cubeZ,
+         1.0+cubeX,  1.0+cubeY, -1.0+cubeZ,
+         1.0+cubeX, -1.0+cubeY, -1.0+cubeZ,
+
+        // Top face
+        -1.0+cubeX,  1.0+cubeY, -1.0+cubeZ,
+        -1.0+cubeX,  1.0+cubeY,  1.0+cubeZ,
+         1.0+cubeX,  1.0+cubeY,  1.0+cubeZ,
+         1.0+cubeX,  1.0+cubeY, -1.0+cubeZ,
+
+        // Bottom face
+        -1.0+cubeX, -1.0+cubeY, -1.0+cubeZ,
+         1.0+cubeX, -1.0+cubeY, -1.0+cubeZ,
+         1.0+cubeX, -1.0+cubeY,  1.0+cubeZ,
+        -1.0+cubeX, -1.0+cubeY,  1.0+cubeZ,
+
+        // Right face
+         1.0+cubeX, -1.0+cubeY, -1.0+cubeZ,
+         1.0+cubeX,  1.0+cubeY, -1.0+cubeZ,
+         1.0+cubeX,  1.0+cubeY,  1.0+cubeZ,
+         1.0+cubeX, -1.0+cubeY,  1.0+cubeZ,
+
+        // Left face
+        -1.0+cubeX, -1.0+cubeY, -1.0+cubeZ,
+        -1.0+cubeX, -1.0+cubeY,  1.0+cubeZ,
+        -1.0+cubeX,  1.0+cubeY,  1.0+cubeZ,
+        -1.0+cubeX,  1.0+cubeY, -1.0+cubeZ,
+      ]
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(vertices));
       lastTime = timeNow;
     }
 
