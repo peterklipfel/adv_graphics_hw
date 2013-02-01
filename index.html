@@ -9,33 +9,11 @@
 
     varying vec4 vColor;
 
-    const vec3 BrickColor  = vec3(1.0,0.3,0.2);
-    const vec3 MortarColor = vec3(0.85,0.86,0.84);
-    const vec2 BrickSize   = vec2(0.30,0.15);
-    const vec2 BrickPct    = vec2(0.90,0.85);
-
-    //  Model coordinates and light from vertex shader
-    // varying float LightIntensity;
     uniform float time;
 
     void main()
     {
-       //  Divide by brick size for unit coordinates
-       vec2 position = vec2(0,0) / BrickSize;
-       //  Stagger rows
-       if (fract(0.5*position.y)>0.5) position.x += 0.5;
-       //  Scroll bricks at 2.5 bricks per second
-       position.x += 2.5*(time/100.0);
-       //  Don't care about the integer part
-       position = fract(position);
-       //  Snap to 0 or 1
-       vec2 useBrick = step(position,BrickPct);
-       //  Interpolate color (0 or 1 gives sharp transition)
-       vec3 color  = mix(MortarColor, BrickColor, useBrick.x*useBrick.y);
-       //  Adjust color intensity for lighting (interpolated from vertex shader values)
-       // color *= LightIntensity;
-       //  Pad color with alpha
-       gl_FragColor = vec4(1.0, cos(time), sin(time), 1.0);
+       gl_FragColor = vec4(1.0, cos(time/200.0), sin(time/333.0), 1.0);
     }
   </script>
 
