@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <head>
   <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
   <script type="text/javascript" src="webgl-utils.js"></script>
@@ -8,14 +9,39 @@
 
     varying vec4 vColor;
 
-    void main(void) {
-      gl_FragColor = vColor;
+    const vec3 BrickColor  = vec3(1.0,0.3,0.2);
+    const vec3 MortarColor = vec3(0.85,0.86,0.84);
+    const vec2 BrickSize   = vec2(0.30,0.15);
+    const vec2 BrickPct    = vec2(0.90,0.85);
+
+    //  Model coordinates and light from vertex shader
+    // varying float LightIntensity;
+    uniform float time;
+
+    void main()
+    {
+       //  Divide by brick size for unit coordinates
+       vec2 position = vec2(0,0) / BrickSize;
+       //  Stagger rows
+       if (fract(0.5*position.y)>0.5) position.x += 0.5;
+       //  Scroll bricks at 2.5 bricks per second
+       position.x += 2.5*(time/100.0);
+       //  Don't care about the integer part
+       position = fract(position);
+       //  Snap to 0 or 1
+       vec2 useBrick = step(position,BrickPct);
+       //  Interpolate color (0 or 1 gives sharp transition)
+       vec3 color  = mix(MortarColor, BrickColor, useBrick.x*useBrick.y);
+       //  Adjust color intensity for lighting (interpolated from vertex shader values)
+       // color *= LightIntensity;
+       //  Pad color with alpha
+       gl_FragColor = vec4(1.0, time, time, 1.0);
     }
   </script>
 
   <script id="shader-vs" type="x-shader/x-vertex">
     attribute vec3 aVertexPosition;
-    attribute vec4 aVertexColor;
+    // attribute vec4 aVertexColor;
 
     uniform mat4 uMVMatrix;
     uniform mat4 uPMatrix;
@@ -24,7 +50,7 @@
 
     void main(void) {
       gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-      vColor = 0.5*(gl_Position/gl_Position.w + 1.0);
+      vColor = vec4(1.0, 0.0, 0.5,1.0);
     }
   </script>
 
@@ -100,17 +126,19 @@
       shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
       gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
-      shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-      gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+      // shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
+      // gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 
       shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
       shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+      shaderProgram.timeUniform = gl.getUniformLocation(shaderProgram, "time");
     }
 
 
     var mvMatrix = mat4.create();
     var pMatrix = mat4.create();
     var mvMatrixStack = [];
+    var time = 1.0;
 
     function mvPushMatrix() {
       var copy = mat4.create();
@@ -128,6 +156,7 @@
     function setMatrixUniforms() {
       gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
       gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+      gl.uniform1f(shaderProgram.timeUniform, time);
     }
 
     function degToRad(degrees) {
@@ -205,7 +234,7 @@
     }
 
     var cubeVertexPositionBuffer;
-    var cubeVertexColorBuffer;
+    // var cubeVertexColorBuffer;
     var cubeVertexIndexBuffer;
 
     function initBuffers() {
@@ -252,26 +281,26 @@
       cubeVertexPositionBuffer.itemSize = 3;
       cubeVertexPositionBuffer.numItems = 24;
 
-      cubeVertexColorBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
-      colors = [
-        [1.0, 0.0, 0.0, 1.0],     // Front face
-        [1.0, 1.0, 0.0, 1.0],     // Back face
-        [0.0, 1.0, 0.0, 1.0],     // Top face
-        [1.0, 0.5, 0.5, 1.0],     // Bottom face
-        [1.0, 0.0, 1.0, 1.0],     // Right face
-        [0.0, 0.0, 1.0, 1.0],     // Left face
-      ];
-      var unpackedColors = [];
-      for (var i in colors) {
-        var color = colors[i];
-        for (var j=0; j < 4; j++) {
-          unpackedColors = unpackedColors.concat(color);
-        }
-      }
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(unpackedColors), gl.DYNAMIC_DRAW);
-      cubeVertexColorBuffer.itemSize = 4;
-      cubeVertexColorBuffer.numItems = 24;
+      // cubeVertexColorBuffer = gl.createBuffer();
+      // gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
+      // colors = [
+      //   [1.0, 0.0, 0.0, 1.0],     // Front face
+      //   [1.0, 1.0, 0.0, 1.0],     // Back face
+      //   [0.0, 1.0, 0.0, 1.0],     // Top face
+      //   [1.0, 0.5, 0.5, 1.0],     // Bottom face
+      //   [1.0, 0.0, 1.0, 1.0],     // Right face
+      //   [0.0, 0.0, 1.0, 1.0],     // Left face
+      // ];
+      // var unpackedColors = [];
+      // for (var i in colors) {
+      //   var color = colors[i];
+      //   for (var j=0; j < 4; j++) {
+      //     unpackedColors = unpackedColors.concat(color);
+      //   }
+      // }
+      // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(unpackedColors), gl.DYNAMIC_DRAW);
+      // cubeVertexColorBuffer.itemSize = 4;
+      // cubeVertexColorBuffer.numItems = 24;
 
       cubeVertexIndexBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
@@ -303,8 +332,8 @@
         mat4.translate(mvMatrix, [cubeX, cubeY, cubeZ]);
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
-        gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, cubeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+        // gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
+        // gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, cubeVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
         setMatrixUniforms();
         gl.drawElements(gl.TRIANGLES, cubeVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
@@ -313,6 +342,7 @@
 
     function tick(){
       requestAnimFrame(tick);
+      time = time+1;
       handleKeys();
       drawScene();
     }
@@ -337,5 +367,6 @@
 </head>
 
 <body onload="startWebGL();">
+  <div id='time'><p id='value'>1.0</p></div>
   <canvas id="helloWorld" width=800 height=800 />
 </body>
