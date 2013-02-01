@@ -35,7 +35,7 @@
        //  Adjust color intensity for lighting (interpolated from vertex shader values)
        // color *= LightIntensity;
        //  Pad color with alpha
-       gl_FragColor = vec4(1.0, time, time, 1.0);
+       gl_FragColor = vec4(1.0, cos(time), sin(time), 1.0);
     }
   </script>
 
@@ -126,9 +126,6 @@
       shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
       gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
-      // shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-      // gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
-
       shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
       shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
       shaderProgram.timeUniform = gl.getUniformLocation(shaderProgram, "time");
@@ -138,7 +135,7 @@
     var mvMatrix = mat4.create();
     var pMatrix = mat4.create();
     var mvMatrixStack = [];
-    var time = 1.0;
+    var time = 0.0;
 
     function mvPushMatrix() {
       var copy = mat4.create();
@@ -280,27 +277,6 @@
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
       cubeVertexPositionBuffer.itemSize = 3;
       cubeVertexPositionBuffer.numItems = 24;
-
-      // cubeVertexColorBuffer = gl.createBuffer();
-      // gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexColorBuffer);
-      // colors = [
-      //   [1.0, 0.0, 0.0, 1.0],     // Front face
-      //   [1.0, 1.0, 0.0, 1.0],     // Back face
-      //   [0.0, 1.0, 0.0, 1.0],     // Top face
-      //   [1.0, 0.5, 0.5, 1.0],     // Bottom face
-      //   [1.0, 0.0, 1.0, 1.0],     // Right face
-      //   [0.0, 0.0, 1.0, 1.0],     // Left face
-      // ];
-      // var unpackedColors = [];
-      // for (var i in colors) {
-      //   var color = colors[i];
-      //   for (var j=0; j < 4; j++) {
-      //     unpackedColors = unpackedColors.concat(color);
-      //   }
-      // }
-      // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(unpackedColors), gl.DYNAMIC_DRAW);
-      // cubeVertexColorBuffer.itemSize = 4;
-      // cubeVertexColorBuffer.numItems = 24;
 
       cubeVertexIndexBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
