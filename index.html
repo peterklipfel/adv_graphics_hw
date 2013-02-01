@@ -8,27 +8,34 @@
     precision mediump float;
 
     varying vec4 vColor;
+    varying vec3 modelPos;
 
     uniform float time;
 
     void main()
     {
-       gl_FragColor = vec4(1.0, cos(time/200.0), sin(time/333.0), 1.0);
+      float b = gl_FragCoord.z;
+      b = (b < 0.0 ? -b : b)/2.0;
+      gl_FragColor = vec4(cos(modelPos.x*33.0*cos(time))*cos(modelPos.x*33.0*cos(time)), 
+                          sin(modelPos.y*25.0*sin(time))*sin(modelPos.y*25.0*cos(time)), 
+                          sin(modelPos.z*43.3*sin(time))*sin(modelPos.z*43.3*cos(time)), 1.0);
     }
   </script>
 
   <script id="shader-vs" type="x-shader/x-vertex">
     attribute vec3 aVertexPosition;
-    // attribute vec4 aVertexColor;
 
     uniform mat4 uMVMatrix;
     uniform mat4 uPMatrix;
 
-    varying vec4 vColor;
+    varying vec3 modelPos;
+
+    // varying vec4 vColor;
 
     void main(void) {
       gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-      vColor = vec4(1.0, 0.0, 0.5,1.0);
+      modelPos = gl_Position.xyz;
+      // vColor = vec4(1.0, 0.0, 0.5,1.0);
     }
   </script>
 
@@ -148,7 +155,7 @@
       currentlyPressedKeys[event.keyCode] = false;
     }
 
-    var zoom = -15;
+    var zoom = -5;
 
     var spin = 0
     var th = 0;
@@ -296,7 +303,7 @@
 
     function tick(){
       requestAnimFrame(tick);
-      time = time+1;
+      time = time+0.01;
       handleKeys();
       drawScene();
     }
