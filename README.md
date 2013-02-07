@@ -7,6 +7,6 @@ homework for my advanced graphics class
 
 press page up & page down to zoom in and out
 
-press the left and right arrow keys to make the axis of rotation change
+press the arrow keys to rotate the cube
 
-Because I had to learn webGL, this assignment took me around 10 hours
+Debugging the totally unhelpful errors of webGL was the biggest problem for this assignment.  It took me a long time to get the lighting working, and to make time work.  Overall, it took me about 8 hours
