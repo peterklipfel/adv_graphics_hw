@@ -31,7 +31,7 @@
                         sin(modelPos.y*25.0*sin(time))*sin(modelPos.y*25.0*cos(time)), 
                         sin(modelPos.z*43.3*sin(time))*sin(modelPos.z*43.3*cos(time)), 1.0);
 
-      float r = sqrt(modelPos.x*modelPos.x + modelPos.y*modelPos.y + modelPos.z*modelPos.z);
+      float r = sqrt(modelPos.x*modelPos.x + modelPos.y*modelPos.y + modelPos.z*modelPos.z)*3.0;
       float phi = atan(modelPos.z/modelPos.y);
       float theta = atan(modelPos.z/modelPos.x);
       vec4 fragmentColor = vec4(square(sin(cos(time)*r)), 
