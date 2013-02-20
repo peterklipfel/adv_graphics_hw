@@ -216,19 +216,19 @@
       }
       if (currentlyPressedKeys[38]) {
         // Up Arrow key
-        ph += 0.1;
+        ph += 0.03;
       }
       if (currentlyPressedKeys[40]) {
         // Down Arrow key
-        ph -= 0.1;
+        ph -= 0.03;
       }
       if (currentlyPressedKeys[39]) {
         // Right Arrow Key
-        th -= 0.1;
+        th -= 0.03;
       }
       if (currentlyPressedKeys[37]) {
         // Left Arrow Key
-        th += 0.1;
+        th += 0.03;
       }
       if(currentlyPressedKeys[87]){
         // W Key
@@ -390,7 +390,7 @@
 
     function tick(){
       requestAnimFrame(tick);
-      time = time+0.01;
+      time = time+0.001;
       handleKeys();
       drawScene();
       stats.update();
