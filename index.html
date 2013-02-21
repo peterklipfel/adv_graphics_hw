@@ -362,22 +362,17 @@
       cubeVertexIndexBuffer.numItems = 36;
     }
 
-    var rCube = 0;
+    function Cube() {
+      this.x = Math.floor((Math.random()*10)-5);
+      this.y = Math.floor((Math.random()*10)-5);
+      this.z = Math.floor((Math.random()*10)-5);
+    }
 
-    function drawScene() {
-      gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-      mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
-
-      gl.uniform3f(shaderProgram.ambientColorUniform, 0.0, 0.0, 0.0);
-      gl.uniform3f(shaderProgram.pointLightingColorUniform, 1.0, 1.0, 1.0);
-      gl.uniform3f(shaderProgram.pointLightingColorUniform, 1.0, 1.0, 1.0);
-
-      mat4.lookAt([zoom*Math.sin(th)*Math.cos(ph),zoom*Math.sin(ph), zoom*Math.cos(th)*Math.cos(ph)], [0.0, 0.0, 0.0], [0.0,Math.cos(ph),0.0], mvMatrix)
-
+    Cube.prototype.draw = function () {
+      //They're all drawing in the same place
       mvPushMatrix();
-        mat4.translate(mvMatrix, [cubeX, cubeY, cubeZ]);
+        mat4.translate(mvMatrix, [cubeX+this.x, cubeY+this.y, cubeZ+this.z]);
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
@@ -386,6 +381,41 @@
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexNormalBuffer);
         gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, cubeVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
       mvPopMatrix();
+    };
+
+
+
+    var cubes = [];
+
+    function initWorldObjects() {
+      var numCubes = 50;
+
+      for (var i=0; i < numCubes; i++) {
+        cubes.push(new Cube((i / numCubes) * 5.0, i / numCubes));
+      }
+    }
+
+
+    var rCube = 0;
+
+    function drawScene() {
+      gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+      mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      gl.enable(gl.BLEND);
+
+      gl.uniform3f(shaderProgram.ambientColorUniform, 0.0, 0.0, 0.0);
+      gl.uniform3f(shaderProgram.pointLightingColorUniform, 1.0, 1.0, 1.0);
+      gl.uniform3f(shaderProgram.pointLightingColorUniform, 1.0, 1.0, 1.0);
+
+      mat4.lookAt([zoom*Math.sin(th)*Math.cos(ph),zoom*Math.sin(ph), zoom*Math.cos(th)*Math.cos(ph)], [0.0, 0.0, 0.0], [0.0,Math.cos(ph),0.0], mvMatrix)
+
+        for (var i in cubes) {
+          cubes[i].draw();
+        }
     }
 
     function tick(){
@@ -398,9 +428,14 @@
 
     function startWebGL() {
       var canvas = document.getElementById("helloWorld");
+
+      canvas.width = document.width;
+      canvas.height = document.height;
+
       initGL(canvas);
       initShaders();
       initBuffers();
+      initWorldObjects();
 
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.enable(gl.DEPTH_TEST);
@@ -422,6 +457,6 @@
   </script>
 </head>
 
-<body onload="startWebGL();">
-  <canvas id="helloWorld" width=800 height=800 />
+<body onload="startWebGL();" style="margin: 0; overflow: hidden;">
+  <canvas id="helloWorld" style="margin:0; overflow: hidden;" width=800 height=800 />
 </body>
