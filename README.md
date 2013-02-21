@@ -9,4 +9,6 @@ press page up & page down to zoom in and out
 
 press the arrow keys to rotate the cube
 
-This took me about 5 hours, and then Linux train wrecked.  I managed to gain qualitative/anecdotal knowledge about performance on different systems.  Chrome has about the same performance in both Linux and Windows, which is about 17ms per frame.  Firefox had similar performance and averaged around the same render time, but was more variable in the render time.  In Windows, it seemed to jump between 5ms and 25 ms.  In Linux, it seemed a bit more stable
+8 linux installations later, I had Kubuntu up and running again.  Optimus support is rough...
+
+If we don't count the time that I spent trying to get my system configured again, I would say that this homework took me 2-3 hours.  I did manage to get some interesting information on performance though.  It is possible to turn vsync off in google chrome.  When I did this, my framerate went up to almost 100fps.  
