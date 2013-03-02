@@ -420,6 +420,9 @@
 
     function tick(){
       requestAnimFrame(tick);
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        videoTexture.needsUpdate = true;
+      }
       time = time+0.001;
       handleKeys();
       drawScene();
@@ -428,6 +431,8 @@
 
     function startWebGL() {
       var canvas = document.getElementById("helloWorld");
+      var container = document.querySelector('#container');
+      container.style.display = 'none';
 
       canvas.width = document.width;
       canvas.height = document.height;
@@ -450,6 +455,12 @@
       stats.domElement.style.top = '0px';
       document.body.appendChild( stats.domElement );
 
+      video = document.createElement('video');
+      video.width = document.width;
+      video.height = document.height;
+      video.autoplay = true;
+      video.loop = true;
+
       window.URL = window.URL || window.webkitURL;
       navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
       //get webcam
@@ -458,13 +469,19 @@
       }, function(stream) {
         //on webcam enabled
         video.src = window.URL.createObjectURL(stream);
-        prompt.style.display = 'none';
-        title.style.display = 'inline';
         container.style.display = 'inline';
-        gui.domElement.style.display = 'inline';
       }, function(error) {
         prompt.innerHTML = 'Unable to capture WebCam. Please reload the page.';
       });
+
+      videoTexture = new THREE.Texture(video);
+
+      renderer = new THREE.WebGLRenderer({
+        antialias: true
+      });
+      renderer.sortObjects = false;
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      container.appendChild(renderer.domElement);
 
       tick();
     }
@@ -474,5 +491,7 @@
 </head>
 
 <body onload="startWebGL();" style="margin: 0; overflow: hidden;">
-  <canvas id="helloWorld" style="margin:0; overflow: hidden;" width=800 height=800 />
+  <div id="container">
+    <canvas id="helloWorld" style="margin:0; overflow: hidden;" width=800 height=800 />
+  </div>
 </body>
