@@ -87,16 +87,23 @@
 
       vec4 sample(float dx,float dy)
       {
-         return texture2D(map,vUv+vec2(dx, dy));
+        return texture2D(map,vUv+vec2(dx,dy));
       }
 
       void main()
       {
         float dX, dY;
-        dX = dY = 0.01;
-        gl_FragColor =  sample(-dX,+dY) +     sample(0.0,+dY) + sample(+dX,+dY)
-                       +sample(-dX,0.0) - 7.0*sample(0.0,0.0) + sample(+dX,0.0)
-                       +sample(-dX,-dY) +     sample(0.0,-dY) + sample(+dX,-dY);
+        dX = dY = 0.005;
+        vec4 color = sample(0.0,0.0);
+        color = min(color , sample(-dX,+dY));
+        color = min(color , sample(0.0,+dY));
+        color = min(color , sample(+dX,+dY));
+        color = min(color , sample(-dX,0.0));
+        color = min(color , sample(+dX,0.0));
+        color = min(color , sample(-dX,-dY));
+        color = min(color , sample(0.0,-dY));
+        color = min(color , sample(+dX,-dY));
+        gl_FragColor = color;
       }
     </script>
     
