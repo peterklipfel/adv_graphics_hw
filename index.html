@@ -34,8 +34,22 @@
 
       void main() {
         vec3 rgb = texture2D(map, vUv).rgb;
+        float r, g, b;
+        r = rgb.r;
+        g = rgb.g;
+        b = rgb.b;
+        if(rgb.r < 0.6){
+          r = 0.0;
+        }
+        if(rgb.g < 0.6){
+          g = 0.0;
+        }
+        if(rgb.b < 0.6){
+          b = 0.0;
+        }
 
-        gl_FragColor = vec4(rgb.r, rgb.g, rgb.b, 1.0);
+
+        gl_FragColor = vec4(r, g, b, 1.0);
       }
     </script>
     
