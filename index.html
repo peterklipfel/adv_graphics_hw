@@ -28,7 +28,7 @@
       }
     </script>
 
-    <script id="fs-filter" type="x-shader/x-fragment">
+    <script id="fs-filter1" type="x-shader/x-fragment">
       uniform sampler2D map;
       varying vec2 vUv;
 
@@ -53,7 +53,7 @@
       }
     </script>
 
-    <script id="fs" type="x-shader/x-fragment">
+    <script id="fs-filter0" type="x-shader/x-fragment">
       uniform sampler2D map;
       varying vec2 vUv;
 
@@ -87,8 +87,10 @@
       
       // 3d
       
-      var camera, scene1, scene2, renderer;
+      var camera, renderer;
+      var scenes = [];
       var filter = 0;
+      var numScenes = 2;
 
       var currentlyPressedKeys = {};
 
@@ -103,7 +105,11 @@
       function handleKeys() {
         if (currentlyPressedKeys[38]) {
           // Up Arrow key
-          filter = 1-filter;
+          filter = 1;
+        }
+        if (currentlyPressedKeys[40]) {
+          // Down Arrow key
+          filter = 0;
         }
       }
       
@@ -111,8 +117,9 @@
         camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
         camera.position.z = 500;
         
-        scene1 = new THREE.Scene();
-        scene2 = new THREE.Scene();
+        for(var i=0; i<numScenes; i++){
+          scenes.push(new THREE.Scene());
+        }
         
         texture = new THREE.Texture( video );
         texture.minFilter = THREE.NearestFilter;
@@ -125,27 +132,22 @@
         document.onkeyup = handleKeyUp;
         var geometry = new THREE.PlaneGeometry( video.videoWidth, video.videoHeight );
         
-        var material1 = new THREE.ShaderMaterial( {
-          uniforms: {
-            "map": { type: "t", value: 0, texture: texture }
-          },
-          vertexShader: document.getElementById( 'vs' ).textContent,
-          fragmentShader: document.getElementById( 'fs-filter' ).textContent
-        } );
-        
-        var material2 = new THREE.ShaderMaterial( {
-          uniforms: {
-            "map": { type: "t", value: 0, texture: texture }
-          },
-          vertexShader: document.getElementById( 'vs' ).textContent,
-          fragmentShader: document.getElementById( 'fs' ).textContent
-        } );
-        
-        var mesh1 = new THREE.Mesh( geometry, material1 );
-        var mesh2 = new THREE.Mesh( geometry, material2 );
-        scene1.add( mesh1 );
-        scene2.add( mesh2 );
-        
+        var materials = [];
+        for(var i=0; i<numScenes; i++){
+          materials.push(
+            new THREE.ShaderMaterial( {
+              uniforms: {
+                "map": { type: "t", value: 0, texture: texture }
+              },
+              vertexShader: document.getElementById( 'vs' ).textContent,
+              fragmentShader: document.getElementById( 'fs-filter'+i ).textContent
+            } )
+          );
+        }
+        for(var i=0; i<numScenes; i++){
+          scenes[i].add( new THREE.Mesh(geometry, materials[i]) )
+        }
+
         renderer = new THREE.WebGLRenderer();
         renderer.setSize( window.innerWidth, window.innerHeight );
         document.body.appendChild( renderer.domElement );
@@ -163,9 +165,9 @@
           texture.needsUpdate = true;
         }
         if(filter == 1){
-          renderer.render( scene1, camera );
+          renderer.render( scenes[0], camera );
         }else {
-          renderer.render( scene2, camera );
+          renderer.render( scenes[1], camera );
         }
       };
     </script>
