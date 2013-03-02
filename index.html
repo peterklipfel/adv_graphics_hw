@@ -450,6 +450,22 @@
       stats.domElement.style.top = '0px';
       document.body.appendChild( stats.domElement );
 
+      window.URL = window.URL || window.webkitURL;
+      navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+      //get webcam
+      navigator.getUserMedia({
+        video: true
+      }, function(stream) {
+        //on webcam enabled
+        video.src = window.URL.createObjectURL(stream);
+        prompt.style.display = 'none';
+        title.style.display = 'inline';
+        container.style.display = 'inline';
+        gui.domElement.style.display = 'inline';
+      }, function(error) {
+        prompt.innerHTML = 'Unable to capture WebCam. Please reload the page.';
+      });
+
       tick();
     }
 
