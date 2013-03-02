@@ -28,7 +28,7 @@
       }
     </script>
 
-    <script id="fs" type="x-shader/x-fragment">
+    <script id="fs-filter" type="x-shader/x-fragment">
       uniform sampler2D map;
       varying vec2 vUv;
 
@@ -50,6 +50,16 @@
 
 
         gl_FragColor = vec4(r, g, b, 1.0);
+      }
+    </script>
+
+    <script id="fs" type="x-shader/x-fragment">
+      uniform sampler2D map;
+      varying vec2 vUv;
+
+      void main() {
+        vec3 rgb = texture2D(map, vUv).rgb;
+        gl_FragColor = vec4(rgb, 1.0);
       }
     </script>
     
@@ -77,14 +87,32 @@
       
       // 3d
       
-      var camera, scene, renderer;
+      var camera, scene1, scene2, renderer;
+      var filter = 0;
+
+      var currentlyPressedKeys = {};
+
+      function handleKeyDown(event) {
+        currentlyPressedKeys[event.keyCode] = true;
+      }
+
+      function handleKeyUp(event) {
+        currentlyPressedKeys[event.keyCode] = false;
+      }
+
+      function handleKeys() {
+        if (currentlyPressedKeys[38]) {
+          // Up Arrow key
+          filter = 1-filter;
+        }
+      }
       
       var init = function () {
-      
         camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
         camera.position.z = 500;
         
-        scene = new THREE.Scene();
+        scene1 = new THREE.Scene();
+        scene2 = new THREE.Scene();
         
         texture = new THREE.Texture( video );
         texture.minFilter = THREE.NearestFilter;
@@ -93,39 +121,52 @@
         texture.generateMipmaps = false;
         texture.needsUpdate = true;
         
+        document.onkeydown = handleKeyDown;
+        document.onkeyup = handleKeyUp;
         var geometry = new THREE.PlaneGeometry( video.videoWidth, video.videoHeight );
         
-        var material = new THREE.ShaderMaterial( {
-
+        var material1 = new THREE.ShaderMaterial( {
           uniforms: {
-
             "map": { type: "t", value: 0, texture: texture }
-
+          },
+          vertexShader: document.getElementById( 'vs' ).textContent,
+          fragmentShader: document.getElementById( 'fs-filter' ).textContent
+        } );
+        
+        var material2 = new THREE.ShaderMaterial( {
+          uniforms: {
+            "map": { type: "t", value: 0, texture: texture }
           },
           vertexShader: document.getElementById( 'vs' ).textContent,
           fragmentShader: document.getElementById( 'fs' ).textContent
         } );
         
-        var mesh = new THREE.Mesh( geometry, material );
-        scene.add( mesh );
+        var mesh1 = new THREE.Mesh( geometry, material1 );
+        var mesh2 = new THREE.Mesh( geometry, material2 );
+        scene1.add( mesh1 );
+        scene2.add( mesh2 );
         
         renderer = new THREE.WebGLRenderer();
         renderer.setSize( window.innerWidth, window.innerHeight );
         document.body.appendChild( renderer.domElement );
         renderer.domElement.style.width = window.innerWidth + 'px';
         renderer.domElement.style.height = window.innerHeight + 'px';
+
         
         animate();
       };
       
       var animate = function () {
         requestAnimationFrame( animate );
-        
+        handleKeys();
         if ( video.readyState === video.HAVE_ENOUGH_DATA ) {
           texture.needsUpdate = true;
         }
-        
-        renderer.render( scene, camera );
+        if(filter == 1){
+          renderer.render( scene1, camera );
+        }else {
+          renderer.render( scene2, camera );
+        }
       };
     </script>
   </body>
