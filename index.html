@@ -63,8 +63,6 @@
     </script>
 
     <script id="fs-filter2" type="x-shader/x-fragment">
-      // uniform float dX;
-      // uniform float dY;
       uniform sampler2D map;
       varying vec2 vUv;
 
@@ -80,7 +78,25 @@
         gl_FragColor =  sample(-dX,+dY) +     sample(0.0,+dY) + sample(+dX,+dY)
                        +sample(-dX,0.0) - 7.0*sample(0.0,0.0) + sample(+dX,0.0)
                        +sample(-dX,-dY) +     sample(0.0,-dY) + sample(+dX,-dY);
-        // gl_FragColor = 0.5*sample(-dX, dY)+0.5*sample(0.1, -dY);
+      }
+    </script>
+
+    <script id="fs-filter3" type="x-shader/x-fragment">
+      uniform sampler2D map;
+      varying vec2 vUv;
+
+      vec4 sample(float dx,float dy)
+      {
+         return texture2D(map,vUv+vec2(dx, dy));
+      }
+
+      void main()
+      {
+        float dX, dY;
+        dX = dY = 0.01;
+        gl_FragColor =  sample(-dX,+dY) +     sample(0.0,+dY) + sample(+dX,+dY)
+                       +sample(-dX,0.0) - 7.0*sample(0.0,0.0) + sample(+dX,0.0)
+                       +sample(-dX,-dY) +     sample(0.0,-dY) + sample(+dX,-dY);
       }
     </script>
     
@@ -111,7 +127,7 @@
       var camera, renderer;
       var scenes = [];
       var filter = 2;
-      var numScenes = 3;
+      var numScenes = 4;
 
       var currentlyPressedKeys = {};
 
@@ -135,6 +151,10 @@
         if (currentlyPressedKeys[39]) {
           // Right Arrow Key
           filter = 2;
+        }
+        if (currentlyPressedKeys[37]) {
+          // Left Arrow Key
+          filter = 3;
         }
       }
       
