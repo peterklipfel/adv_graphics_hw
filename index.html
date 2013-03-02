@@ -12,7 +12,7 @@
     </style>
   </head>
   <body>
-    <script src="http://sole.github.com/cdn/Three-r50.js"></script>
+    <script src="three.min.js"></script>
     
     <script id="vs" type="x-shader/x-vertex">
 
@@ -25,6 +25,16 @@
         vec4 color = texture2D( map, vUv );
         vec4 pos = vec4( position.xy, 0.0, 1.0 );
         gl_Position = projectionMatrix * modelViewMatrix * pos;
+      }
+    </script>
+    
+    <script id="fs-filter0" type="x-shader/x-fragment">
+      uniform sampler2D map;
+      varying vec2 vUv;
+
+      void main() {
+        vec3 rgb = texture2D(map, vUv).rgb;
+        gl_FragColor = vec4(rgb, 1.0);
       }
     </script>
 
@@ -48,18 +58,29 @@
           b = 0.0;
         }
 
-
         gl_FragColor = vec4(r, g, b, 1.0);
       }
     </script>
 
-    <script id="fs-filter0" type="x-shader/x-fragment">
+    <script id="fs-filter2" type="x-shader/x-fragment">
+      // uniform float dX;
+      // uniform float dY;
       uniform sampler2D map;
       varying vec2 vUv;
 
-      void main() {
-        vec3 rgb = texture2D(map, vUv).rgb;
-        gl_FragColor = vec4(rgb, 1.0);
+      vec4 sample(float dx,float dy)
+      {
+         return texture2D(map,vUv+vec2(dx, dy));
+      }
+
+      void main()
+      {
+        float dX, dY;
+        dX = dY = 0.01;
+        gl_FragColor =  sample(-dX,+dY) +     sample(0.0,+dY) + sample(+dX,+dY)
+                       +sample(-dX,0.0) - 7.0*sample(0.0,0.0) + sample(+dX,0.0)
+                       +sample(-dX,-dY) +     sample(0.0,-dY) + sample(+dX,-dY);
+        // gl_FragColor = 0.5*sample(-dX, dY)+0.5*sample(0.1, -dY);
       }
     </script>
     
@@ -89,8 +110,8 @@
       
       var camera, renderer;
       var scenes = [];
-      var filter = 0;
-      var numScenes = 2;
+      var filter = 2;
+      var numScenes = 3;
 
       var currentlyPressedKeys = {};
 
@@ -110,6 +131,10 @@
         if (currentlyPressedKeys[40]) {
           // Down Arrow key
           filter = 0;
+        }
+        if (currentlyPressedKeys[39]) {
+          // Right Arrow Key
+          filter = 2;
         }
       }
       
@@ -164,11 +189,7 @@
         if ( video.readyState === video.HAVE_ENOUGH_DATA ) {
           texture.needsUpdate = true;
         }
-        if(filter == 1){
-          renderer.render( scenes[0], camera );
-        }else {
-          renderer.render( scenes[1], camera );
-        }
+        renderer.render( scenes[filter], camera );
       };
     </script>
   </body>
