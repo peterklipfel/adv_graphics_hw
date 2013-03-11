@@ -182,7 +182,8 @@
         
         document.onkeydown = handleKeyDown;
         document.onkeyup = handleKeyUp;
-        var geometry = new THREE.PlaneGeometry( video.videoWidth, video.videoHeight );
+        // var geometry = new THREE.PlaneGeometry( video.videoWidth, video.videoHeight );
+        var geometry = new THREE.SphereGeometry(Math.sqrt(video.videoWidth*video.videoWidth + video.videoHeight*video.videoHeight)/3, 32, 32);
         
         var materials = [];
         for(var i=0; i<numScenes; i++){
@@ -196,7 +197,17 @@
             } )
           );
         }
+        var pointLight = new THREE.PointLight(0xFFFFFF);
+
+        // set its position
+        pointLight.position.x = 10;
+        pointLight.position.y = 50;
+        pointLight.position.z = 130;
         for(var i=0; i<numScenes; i++){
+
+          // add to the scene
+          scenes[i].add(pointLight);
+
           scenes[i].add( new THREE.Mesh(geometry, materials[i]) )
         }
 
