@@ -19,7 +19,12 @@
     uniform sampler2D uTex1;
 
     void main(void) {
-        vec4 textureColor = texture2D(uTex1, vec2(vTextureCoord.s, vTextureCoord.t));
+        vec4 textureColor = texture2D(uTex0, vec2(vTextureCoord.s, vTextureCoord.t));
+        vec4 textureColor2 = texture2D(uTex1, vec2(vTextureCoord.s, vTextureCoord.t));
+
+        textureColor.r = (textureColor.r+textureColor2.r)/2.0;
+        textureColor.g = (textureColor.g+textureColor2.g)/2.0;
+        textureColor.b = (textureColor.b+textureColor2.b)/2.0;
         gl_FragColor = vec4(textureColor.rgb * vLightWeighting, textureColor.a);
     }
 </script>
@@ -148,6 +153,9 @@
         shaderProgram.directionalColorUniform = gl.getUniformLocation(shaderProgram, "uDirectionalColor");
         shaderProgram.tex0 = gl.getUniformLocation(shaderProgram, "uTex0");
         shaderProgram.tex1 = gl.getUniformLocation(shaderProgram, "uTex1");
+        shaderProgram.lightColorSpecular = gl.getUniformLocation(shaderProgram, "uLightColorSpecular");
+        shaderProgram.lightColorDiffuse = gl.getUniformLocation(shaderProgram, "uLightColorDiffuse");
+        shaderProgram.materialShininess = gl.getUniformLocation(shaderProgram, "uMaterialShininess");
     }
 
 
@@ -437,8 +445,7 @@
         gl.activeTexture(gl.TEXTURE0);
         gl.uniform1i(shaderProgram.samplerUniform, 0);
         gl.uniform1i(shaderProgram.useLightingUniform, true);
-        gl.uniform3f(
-            shaderProgram.ambientColorUniform, 0.1, 0.1, 0.1);
+        gl.uniform3f(shaderProgram.ambientColorUniform, 0.1, 0.1, 0.1);
 
         var lightingDirection = [-0.25, -0.25, -1];
         var adjustedLD = vec3.create();
@@ -459,6 +466,10 @@
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, tex1);
         gl.uniform1i(shaderProgram.tex1, 1);
+
+        gl.uniform1f( shaderProgram.materialShininess, 30.0);
+        gl.uniform3f( shaderProgram.lightColorSpecular, 0.9, 0.9, 0.9);
+        gl.uniform3f( shaderProgram.lightColorDiffuse, 0.1, 0.1, 0.1);
 
         setMatrixUniforms();
         gl.drawElements(gl.TRIANGLES, cubeVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
