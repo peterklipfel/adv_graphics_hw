@@ -12,26 +12,51 @@
     precision mediump float;
 
     varying vec2 vTextureCoord;
+    varying vec3 vNormalInEyeSpace;
+    varying vec3 vTangentInEyeSpace;
+    varying vec4 vPosition;
+
     varying vec3 vLightWeighting;
 
-    uniform sampler2D uSampler;
     uniform sampler2D uTex0;
     uniform sampler2D uTex1;
 
-    void main(void) {
-        vec4 textureColor = texture2D(uTex0, vec2(vTextureCoord.s, vTextureCoord.t));
-        vec4 textureColor2 = texture2D(uTex1, vec2(vTextureCoord.s, vTextureCoord.t));
+    uniform float uMaterialShininess;
+    uniform vec3 uAmbientColor;
+    uniform vec3 uLightColorSpecular;
+    uniform vec3 uLightColorDiffuse;
+    uniform vec3 uLightPos;
 
-        textureColor.r = (textureColor.r+textureColor2.r)/2.0;
-        textureColor.g = (textureColor.g+textureColor2.g)/2.0;
-        textureColor.b = (textureColor.b+textureColor2.b)/2.0;
-        gl_FragColor = vec4(textureColor.rgb * vLightWeighting, textureColor.a);
+
+    void main(void) {
+        vec2 texCoord = vec2(vTextureCoord.s, vTextureCoord.t);  
+        vec4 diffuse = texture2D(uTex0, texCoord).rgba;
+
+        vec3 normalT = normalize( 2.0 * ( texture2D(uTex1, texCoord).xyz - 0.5 ).xyz ); 
+    
+        vec3 binormal = cross(vNormalInEyeSpace, vTangentInEyeSpace);
+        vec3 normal = normalT.x * vTangentInEyeSpace + 
+                      normalT.y * binormal + 
+                      normalT.z * vNormalInEyeSpace;
+
+        normal = normalize(normal);
+
+        vec3 eyeDirection   = normalize(-vPosition.xyz);
+        vec3 lightDirection = normalize(uLightPos - vPosition.xyz);            
+        vec3 reflectionDirection = reflect(-lightDirection, normal);
+        
+        float kSpecular = pow(max(dot(reflectionDirection, eyeDirection), 0.0), uMaterialShininess);
+        float kDiffuse = max(dot(normal, lightDirection), 0.0);
+
+        vec3 kLight = uAmbientColor + uLightColorSpecular * kSpecular + uLightColorDiffuse  * kDiffuse;
+        gl_FragColor = vec4(diffuse.rgb * kLight, diffuse.a);
     }
 </script>
 
 <script id="shader-vs" type="x-shader/x-vertex">
     attribute vec3 aVertexPosition;
     attribute vec3 aVertexNormal;
+    attribute vec3 aTangent;
     attribute vec2 aTextureCoord;
 
     uniform mat4 uMVMatrix;
@@ -42,23 +67,25 @@
 
     uniform vec3 uLightingDirection;
     uniform vec3 uDirectionalColor;
-
-    uniform bool uUseLighting;
-
     varying vec2 vTextureCoord;
     varying vec3 vLightWeighting;
 
-    void main(void) {
-        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-        vTextureCoord = aTextureCoord;
+    varying vec3 vNormalInEyeSpace;
+    varying vec3 vTangentInEyeSpace;
+    varying vec4 vPosition;
 
-        if (!uUseLighting) {
-            vLightWeighting = vec3(1.0, 1.0, 1.0);
-        } else {
-            vec3 transformedNormal = uNMatrix * aVertexNormal;
-            float directionalLightWeighting = max(dot(transformedNormal, uLightingDirection), 0.0);
-            vLightWeighting = uAmbientColor + uDirectionalColor * directionalLightWeighting;
-        }
+    void main(void) {
+       vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+        gl_Position = uPMatrix * vPosition;
+        vTextureCoord = aTextureCoord;
+    
+      // transform normal and tangent to eye space using the normalMatrix
+      vNormalInEyeSpace = uNMatrix * aVertexNormal;
+      vTangentInEyeSpace = uNMatrix * aTangent;
+
+      vec3 transformedNormal = uNMatrix * aVertexNormal;
+      float directionalLightWeighting = max(dot(transformedNormal, uLightingDirection), 0.0);
+      vLightWeighting = uAmbientColor + uDirectionalColor * directionalLightWeighting;
     }
 </script>
 
@@ -360,6 +387,44 @@
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
         cubeVertexNormalBuffer.itemSize = 3;
         cubeVertexNormalBuffer.numItems = 24;
+
+        var tangents = [ 
+            // Front Face
+            -1.0, 0.0, 0.0,
+            -1.0, 0.0, 0.0,
+            -1.0, 0.0, 0.0,
+            -1.0, 0.0, 0.0,
+            // Back face
+             1.0, 0.0, 0.0,
+             1.0, 0.0, 0.0,
+             1.0, 0.0, 0.0,
+             1.0, 0.0, 0.0,
+            // Top Face
+             0.0, -1.0,  0.0,     
+             0.0, -1.0,  0.0,     
+             0.0, -1.0,  0.0,     
+             0.0, -1.0,  0.0, 
+            // Bottom face
+             0.0,  1.0,  0.0,
+             0.0,  1.0,  0.0,
+             0.0,  1.0,  0.0,
+             0.0,  1.0,  0.0,
+            // Right face
+             0.0, -1.0,  0.0,     
+             0.0, -1.0,  0.0,     
+             0.0, -1.0,  0.0,     
+             0.0, -1.0,  0.0,     
+            // Left face
+             0.0,  1.0,  0.0,
+             0.0,  1.0,  0.0,
+             0.0,  1.0,  0.0,
+             0.0,  1.0,  0.0
+        ];
+        vertexTangentBuffer = gl.createBuffer();
+        vertexTangentBuffer.itemSize = 3;
+        vertexTangentBuffer.numItems = 4;
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexTangentBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tangents), gl.STATIC_DRAW);
 
         cubeVertexTextureCoordBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
