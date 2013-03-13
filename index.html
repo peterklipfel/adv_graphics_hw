@@ -1,234 +1,504 @@
-<!DOCTYPE html>
+
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>WebGL Webcam</title>
-    <style>
-      body {
-        margin: 0;
-        background-color: #000000;
-        overflow: hidden;
-      }
-    </style>
-  </head>
-  <body>
-    <script src="three.min.js"></script>
-    
-    <script id="vs" type="x-shader/x-vertex">
 
-      uniform sampler2D map;
+<head>
+<title>Bump Mapping</title>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
 
-      varying vec2 vUv;
+<script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+<script type="text/javascript" src="webgl-utils.js"></script>
 
-      void main() {
-        vUv = uv;
-        vec4 color = texture2D( map, vUv );
-        vec4 pos = vec4( position.xy, 0.0, 1.0 );
-        gl_Position = projectionMatrix * modelViewMatrix * pos;
-      }
-    </script>
-    
-    <script id="fs-filter0" type="x-shader/x-fragment">
-      uniform sampler2D map;
-      varying vec2 vUv;
+<script id="shader-fs" type="x-shader/x-fragment">
+    precision mediump float;
 
-      void main() {
-        vec3 rgb = texture2D(map, vUv).rgb;
-        gl_FragColor = vec4(rgb, 1.0);
-      }
-    </script>
+    varying vec2 vTextureCoord;
+    varying vec3 vLightWeighting;
 
-    <script id="fs-filter1" type="x-shader/x-fragment">
-      uniform sampler2D map;
-      varying vec2 vUv;
+    uniform sampler2D uSampler;
 
-      void main() {
-        vec3 rgb = texture2D(map, vUv).rgb;
-        float r, g, b;
-        r = rgb.r;
-        g = rgb.g;
-        b = rgb.b;
-        if(rgb.r < 0.6){
-          r = 0.0;
+    void main(void) {
+        vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+        gl_FragColor = vec4(textureColor.rgb * vLightWeighting, textureColor.a);
+    }
+</script>
+
+<script id="shader-vs" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+    attribute vec2 aTextureCoord;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat3 uNMatrix;
+
+    uniform vec3 uAmbientColor;
+
+    uniform vec3 uLightingDirection;
+    uniform vec3 uDirectionalColor;
+
+    uniform bool uUseLighting;
+
+    varying vec2 vTextureCoord;
+    varying vec3 vLightWeighting;
+
+    void main(void) {
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vTextureCoord = aTextureCoord;
+
+        if (!uUseLighting) {
+            vLightWeighting = vec3(1.0, 1.0, 1.0);
+        } else {
+            vec3 transformedNormal = uNMatrix * aVertexNormal;
+            float directionalLightWeighting = max(dot(transformedNormal, uLightingDirection), 0.0);
+            vLightWeighting = uAmbientColor + uDirectionalColor * directionalLightWeighting;
         }
-        if(rgb.g < 0.6){
-          g = 0.0;
+    }
+</script>
+
+
+<script type="text/javascript">
+
+    var gl;
+
+    function initGL(canvas) {
+        try {
+            gl = canvas.getContext("experimental-webgl");
+            gl.viewportWidth = canvas.width;
+            gl.viewportHeight = canvas.height;
+        } catch (e) {
         }
-        if(rgb.b < 0.6){
-          b = 0.0;
+        if (!gl) {
+            alert("Could not initialise WebGL, sorry :-(");
+        }
+    }
+
+
+    function getShader(gl, id) {
+        var shaderScript = document.getElementById(id);
+        if (!shaderScript) {
+            return null;
         }
 
-        gl_FragColor = vec4(r, g, b, 1.0);
-      }
-    </script>
+        var str = "";
+        var k = shaderScript.firstChild;
+        while (k) {
+            if (k.nodeType == 3) {
+                str += k.textContent;
+            }
+            k = k.nextSibling;
+        }
 
-    <script id="fs-filter2" type="x-shader/x-fragment">
-      uniform sampler2D map;
-      varying vec2 vUv;
+        var shader;
+        if (shaderScript.type == "x-shader/x-fragment") {
+            shader = gl.createShader(gl.FRAGMENT_SHADER);
+        } else if (shaderScript.type == "x-shader/x-vertex") {
+            shader = gl.createShader(gl.VERTEX_SHADER);
+        } else {
+            return null;
+        }
 
-      vec4 sample(float dx,float dy)
-      {
-         return texture2D(map,vUv+vec2(dx, dy));
-      }
+        gl.shaderSource(shader, str);
+        gl.compileShader(shader);
 
-      void main()
-      {
-        float dX, dY;
-        dX = dY = 0.01;
-        gl_FragColor =  sample(-dX,+dY) +     sample(0.0,+dY) + sample(+dX,+dY)
-                       +sample(-dX,0.0) - 7.0*sample(0.0,0.0) + sample(+dX,0.0)
-                       +sample(-dX,-dY) +     sample(0.0,-dY) + sample(+dX,-dY);
-      }
-    </script>
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            alert(gl.getShaderInfoLog(shader));
+            return null;
+        }
 
-    <script id="fs-filter3" type="x-shader/x-fragment">
-      uniform sampler2D map;
-      varying vec2 vUv;
+        return shader;
+    }
 
-      vec4 sample(float dx,float dy)
-      {
-        return texture2D(map,vUv+vec2(dx,dy));
-      }
 
-      void main()
-      {
-        float dX, dY;
-        dX = dY = 0.005;
-        vec4 color = sample(0.0,0.0);
-        color = min(color , sample(-dX,+dY));
-        color = min(color , sample(0.0,+dY));
-        color = min(color , sample(+dX,+dY));
-        color = min(color , sample(-dX,0.0));
-        color = min(color , sample(+dX,0.0));
-        color = min(color , sample(-dX,-dY));
-        color = min(color , sample(0.0,-dY));
-        color = min(color , sample(+dX,-dY));
-        gl_FragColor = color;
-      }
-    </script>
-    
-    <script>
-      
-      // webcam
-      
-      window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
-      navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-      
-      var video = document.createElement( 'video' );
-      video.autoplay = true;
-      
-      video.addEventListener( 'loadedmetadata', function ( event ) {
-        video.style.width = video.videoWidth + 'px';
-        video.style.height = video.videoHeight + 'px';
-        init();
-      } );
+    var shaderProgram;
 
-      navigator.getUserMedia( { video: true }, function ( stream ) {
-        video.src = window.URL.createObjectURL( stream );
-      }, function ( error ) {
-        console.log( error );
-      } );
-      
-      // 3d
-      
-      var camera, renderer;
-      var scenes = [];
-      var filter = 2;
-      var numScenes = 4;
+    function initShaders() {
+        var fragmentShader = getShader(gl, "shader-fs");
+        var vertexShader = getShader(gl, "shader-vs");
 
-      var currentlyPressedKeys = {};
+        shaderProgram = gl.createProgram();
+        gl.attachShader(shaderProgram, vertexShader);
+        gl.attachShader(shaderProgram, fragmentShader);
+        gl.linkProgram(shaderProgram);
 
-      function handleKeyDown(event) {
+        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+            alert("Could not initialise shaders");
+        }
+
+        gl.useProgram(shaderProgram);
+
+        shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+        gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+
+        shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
+        gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
+
+        shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
+        gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
+
+        shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+        shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+        shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
+        shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+        shaderProgram.useLightingUniform = gl.getUniformLocation(shaderProgram, "uUseLighting");
+        shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, "uAmbientColor");
+        shaderProgram.lightingDirectionUniform = gl.getUniformLocation(shaderProgram, "uLightingDirection");
+        shaderProgram.directionalColorUniform = gl.getUniformLocation(shaderProgram, "uDirectionalColor");
+    }
+
+
+
+    function handleLoadedTexture(texture) {
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+        gl.generateMipmap(gl.TEXTURE_2D);
+
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+
+
+    var crateTexture;
+
+    function initTexture() {
+        crateTexture = gl.createTexture();
+        crateTexture.image = new Image();
+        crateTexture.image.onload = function () {
+            handleLoadedTexture(crateTexture)
+        }
+
+        crateTexture.image.src = "crate.gif";
+    }
+
+
+    var mvMatrix = mat4.create();
+    var mvMatrixStack = [];
+    var pMatrix = mat4.create();
+
+    function mvPushMatrix() {
+        var copy = mat4.create();
+        mat4.set(mvMatrix, copy);
+        mvMatrixStack.push(copy);
+    }
+
+    function mvPopMatrix() {
+        if (mvMatrixStack.length == 0) {
+            throw "Invalid popMatrix!";
+        }
+        mvMatrix = mvMatrixStack.pop();
+    }
+
+
+    function setMatrixUniforms() {
+        gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
+        gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+
+        var normalMatrix = mat3.create();
+        mat4.toInverseMat3(mvMatrix, normalMatrix);
+        mat3.transpose(normalMatrix);
+        gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
+    }
+
+
+    function degToRad(degrees) {
+        return degrees * Math.PI / 180;
+    }
+
+
+
+    var xRot = 0;
+    var ph = 3;
+
+    var yRot = 0;
+    var th = -3;
+
+    var z = -5.0;
+
+
+    var currentlyPressedKeys = {};
+
+    function handleKeyDown(event) {
         currentlyPressedKeys[event.keyCode] = true;
-      }
+    }
 
-      function handleKeyUp(event) {
+
+    function handleKeyUp(event) {
         currentlyPressedKeys[event.keyCode] = false;
-      }
+    }
 
-      function handleKeys() {
-        if (currentlyPressedKeys[38]) {
-          // Up Arrow key
-          filter = 1;
+
+    function handleKeys() {
+        if (currentlyPressedKeys[33]) {
+            // Page Up
+            z -= 0.05;
         }
-        if (currentlyPressedKeys[40]) {
-          // Down Arrow key
-          filter = 0;
-        }
-        if (currentlyPressedKeys[39]) {
-          // Right Arrow Key
-          filter = 2;
+        if (currentlyPressedKeys[34]) {
+            // Page Down
+            z += 0.05;
         }
         if (currentlyPressedKeys[37]) {
-          // Left Arrow Key
-          filter = 3;
+            // Left cursor key
+            th -= 1;
         }
-      }
-      
-      var init = function () {
-        camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
-        camera.position.z = 500;
-        
-        for(var i=0; i<numScenes; i++){
-          scenes.push(new THREE.Scene());
+        if (currentlyPressedKeys[39]) {
+            // Right cursor key
+            th += 1;
         }
-        
-        texture = new THREE.Texture( video );
-        texture.minFilter = THREE.NearestFilter;
-        texture.magFilter = THREE.NearestFilter;
-        texture.format = THREE.RGBFormat;
-        texture.generateMipmaps = false;
-        texture.needsUpdate = true;
-        
+        if (currentlyPressedKeys[38]) {
+            // Up cursor key
+            ph -= 1;
+        }
+        if (currentlyPressedKeys[40]) {
+            // Down cursor key
+            ph += 1;
+        }
+    }
+
+    var cubeVertexPositionBuffer;
+    var cubeVertexNormalBuffer;
+    var cubeVertexTextureCoordBuffer;
+    var cubeVertexIndexBuffer;
+
+    function initBuffers() {
+        cubeVertexPositionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
+        vertices = [
+            // Front face
+            -1.0, -1.0,  1.0,
+             1.0, -1.0,  1.0,
+             1.0,  1.0,  1.0,
+            -1.0,  1.0,  1.0,
+
+            // Back face
+            -1.0, -1.0, -1.0,
+            -1.0,  1.0, -1.0,
+             1.0,  1.0, -1.0,
+             1.0, -1.0, -1.0,
+
+            // Top face
+            -1.0,  1.0, -1.0,
+            -1.0,  1.0,  1.0,
+             1.0,  1.0,  1.0,
+             1.0,  1.0, -1.0,
+
+            // Bottom face
+            -1.0, -1.0, -1.0,
+             1.0, -1.0, -1.0,
+             1.0, -1.0,  1.0,
+            -1.0, -1.0,  1.0,
+
+            // Right face
+             1.0, -1.0, -1.0,
+             1.0,  1.0, -1.0,
+             1.0,  1.0,  1.0,
+             1.0, -1.0,  1.0,
+
+            // Left face
+            -1.0, -1.0, -1.0,
+            -1.0, -1.0,  1.0,
+            -1.0,  1.0,  1.0,
+            -1.0,  1.0, -1.0,
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+        cubeVertexPositionBuffer.itemSize = 3;
+        cubeVertexPositionBuffer.numItems = 24;
+
+        cubeVertexNormalBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexNormalBuffer);
+        var vertexNormals = [
+            // Front face
+             0.0,  0.0,  1.0,
+             0.0,  0.0,  1.0,
+             0.0,  0.0,  1.0,
+             0.0,  0.0,  1.0,
+
+            // Back face
+             0.0,  0.0, -1.0,
+             0.0,  0.0, -1.0,
+             0.0,  0.0, -1.0,
+             0.0,  0.0, -1.0,
+
+            // Top face
+             0.0,  1.0,  0.0,
+             0.0,  1.0,  0.0,
+             0.0,  1.0,  0.0,
+             0.0,  1.0,  0.0,
+
+            // Bottom face
+             0.0, -1.0,  0.0,
+             0.0, -1.0,  0.0,
+             0.0, -1.0,  0.0,
+             0.0, -1.0,  0.0,
+
+            // Right face
+             1.0,  0.0,  0.0,
+             1.0,  0.0,  0.0,
+             1.0,  0.0,  0.0,
+             1.0,  0.0,  0.0,
+
+            // Left face
+            -1.0,  0.0,  0.0,
+            -1.0,  0.0,  0.0,
+            -1.0,  0.0,  0.0,
+            -1.0,  0.0,  0.0
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+        cubeVertexNormalBuffer.itemSize = 3;
+        cubeVertexNormalBuffer.numItems = 24;
+
+        cubeVertexTextureCoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
+        var textureCoords = [
+            // Front face
+            0.0, 0.0,
+            1.0, 0.0,
+            1.0, 1.0,
+            0.0, 1.0,
+
+            // Back face
+            1.0, 0.0,
+            1.0, 1.0,
+            0.0, 1.0,
+            0.0, 0.0,
+
+            // Top face
+            0.0, 1.0,
+            0.0, 0.0,
+            1.0, 0.0,
+            1.0, 1.0,
+
+            // Bottom face
+            1.0, 1.0,
+            0.0, 1.0,
+            0.0, 0.0,
+            1.0, 0.0,
+
+            // Right face
+            1.0, 0.0,
+            1.0, 1.0,
+            0.0, 1.0,
+            0.0, 0.0,
+
+            // Left face
+            0.0, 0.0,
+            1.0, 0.0,
+            1.0, 1.0,
+            0.0, 1.0
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+        cubeVertexTextureCoordBuffer.itemSize = 2;
+        cubeVertexTextureCoordBuffer.numItems = 24;
+
+        cubeVertexIndexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
+        var cubeVertexIndices = [
+            0, 1, 2,      0, 2, 3,    // Front face
+            4, 5, 6,      4, 6, 7,    // Back face
+            8, 9, 10,     8, 10, 11,  // Top face
+            12, 13, 14,   12, 14, 15, // Bottom face
+            16, 17, 18,   16, 18, 19, // Right face
+            20, 21, 22,   20, 22, 23  // Left face
+        ];
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cubeVertexIndices), gl.STATIC_DRAW);
+        cubeVertexIndexBuffer.itemSize = 1;
+        cubeVertexIndexBuffer.numItems = 36;
+    }
+
+
+    function drawScene() {
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+
+        mat4.identity(mvMatrix);
+
+        mat4.translate(mvMatrix, [0.0, 0.0, z]);
+
+        mat4.rotate(mvMatrix, degToRad(xRot), [1, 0, 0]);
+        mat4.rotate(mvMatrix, degToRad(yRot), [0, 1, 0]);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexNormalBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, cubeVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
+        gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, cubeVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, crateTexture);
+        gl.uniform1i(shaderProgram.samplerUniform, 0);
+        gl.uniform1i(shaderProgram.useLightingUniform, true);
+        gl.uniform3f(
+            shaderProgram.ambientColorUniform, 0.1, 0.1, 0.1);
+
+        var lightingDirection = [-0.25, -0.25, -1];
+        var adjustedLD = vec3.create();
+        vec3.normalize(lightingDirection, adjustedLD);
+        vec3.scale(adjustedLD, -1);
+        gl.uniform3fv(shaderProgram.lightingDirectionUniform, adjustedLD);
+
+        gl.uniform3f(shaderProgram.directionalColorUniform, 1, 1, 1);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
+        setMatrixUniforms();
+        gl.drawElements(gl.TRIANGLES, cubeVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+    }
+
+
+    var lastTime = 0;
+
+    function animate() {
+        var timeNow = new Date().getTime();
+        if (lastTime != 0) {
+            var elapsed = timeNow - lastTime;
+
+            xRot = ph;
+            yRot = th;
+        }
+        lastTime = timeNow;
+    }
+
+
+    function tick() {
+        requestAnimFrame(tick);
+        handleKeys();
+        drawScene();
+        animate();
+    }
+
+
+    function webGLStart() {
+        var canvas = document.getElementById("lesson07-canvas");
+        canvas.width = document.width;
+        canvas.height = document.height;
+        initGL(canvas);
+        initShaders();
+        initBuffers();
+        initTexture();
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.enable(gl.DEPTH_TEST);
+
         document.onkeydown = handleKeyDown;
         document.onkeyup = handleKeyUp;
-        // var geometry = new THREE.PlaneGeometry( video.videoWidth, video.videoHeight );
-        var geometry = new THREE.SphereGeometry(Math.sqrt(video.videoWidth*video.videoWidth + video.videoHeight*video.videoHeight)/3, 32, 32);
-        
-        var materials = [];
-        for(var i=0; i<numScenes; i++){
-          materials.push(
-            new THREE.ShaderMaterial( {
-              uniforms: {
-                "map": { type: "t", value: 0, texture: texture }
-              },
-              vertexShader: document.getElementById( 'vs' ).textContent,
-              fragmentShader: document.getElementById( 'fs-filter'+i ).textContent
-            } )
-          );
-        }
-        var pointLight = new THREE.PointLight(0xFFFFFF);
 
-        // set its position
-        pointLight.position.x = 10;
-        pointLight.position.y = 50;
-        pointLight.position.z = 130;
-        for(var i=0; i<numScenes; i++){
+        tick();
+    }
 
-          // add to the scene
-          scenes[i].add(pointLight);
+</script>
 
-          scenes[i].add( new THREE.Mesh(geometry, materials[i]) )
-        }
 
-        renderer = new THREE.WebGLRenderer();
-        renderer.setSize( window.innerWidth, window.innerHeight );
-        document.body.appendChild( renderer.domElement );
-        renderer.domElement.style.width = window.innerWidth + 'px';
-        renderer.domElement.style.height = window.innerHeight + 'px';
+</head>
 
-        
-        animate();
-      };
-      
-      var animate = function () {
-        requestAnimationFrame( animate );
-        handleKeys();
-        if ( video.readyState === video.HAVE_ENOUGH_DATA ) {
-          texture.needsUpdate = true;
-        }
-        renderer.render( scenes[filter], camera );
-      };
-    </script>
-  </body>
+
+<body onload="webGLStart();" style="margin: 0; overflow: hidden;">
+    <canvas id="lesson07-canvas" style="margin: 0; overflow: hidden;"></canvas>
+
+</body>
+
 </html>
