@@ -29,18 +29,21 @@
 
 
     void main(void) {
+        // scale texture coords so it looks nice
         vec2 texCoord = vec2(vTextureCoord.s, vTextureCoord.t);  
         vec4 diffuse = texture2D(uTex0, texCoord).rgba;
-
+            
+        // convert [0,1] to [-1,1]
         vec3 normalT = normalize( 2.0 * ( texture2D(uTex1, texCoord).xyz - 0.5 ).xyz ); 
-    
+        
         vec3 binormal = cross(vNormalInEyeSpace, vTangentInEyeSpace);
         vec3 normal = normalT.x * vTangentInEyeSpace + 
                       normalT.y * binormal + 
                       normalT.z * vNormalInEyeSpace;
 
         normal = normalize(normal);
-
+    
+        // calculations are done in eye space
         vec3 eyeDirection   = normalize(-vPosition.xyz);
         vec3 lightDirection = normalize(uLightPos - vPosition.xyz);            
         vec3 reflectionDirection = reflect(-lightDirection, normal);
@@ -167,13 +170,16 @@
         shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
         gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
 
+        shaderProgram.vertexTangentAttribute = gl.getAttribLocation(shaderProgram, "aTangent");
+        gl.enableVertexAttribArray(shaderProgram.vertexTangentAttribute);
+
         shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
         gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
 
         shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
         shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
         shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
-        shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+        // shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
         shaderProgram.useLightingUniform = gl.getUniformLocation(shaderProgram, "uUseLighting");
         shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, "uAmbientColor");
         shaderProgram.lightingDirectionUniform = gl.getUniformLocation(shaderProgram, "uLightingDirection");
@@ -204,12 +210,12 @@
         tex0 = gl.createTexture();
         tex0.image = new Image();
         tex0.image.onload = function () { handleLoadedTexture(tex0) }
-        tex0.image.src = "cratediffuse.gif";
+        tex0.image.src = "3crates/crate1/crate1_diffuse.png";
     
         tex1 = gl.createTexture();
         tex1.image = new Image();
         tex1.image.onload = function () { handleLoadedTexture(tex1) }
-        tex1.image.src = "cratenormal.gif";
+        tex1.image.src = "3crates/crate1/crate1_normal.png";
     }
 
 
@@ -388,6 +394,8 @@
         cubeVertexNormalBuffer.itemSize = 3;
         cubeVertexNormalBuffer.numItems = 24;
 
+        cubeVertexTangentBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTangentBuffer);
         var tangents = [ 
             // Front Face
             -1.0, 0.0, 0.0,
@@ -400,15 +408,15 @@
              1.0, 0.0, 0.0,
              1.0, 0.0, 0.0,
             // Top Face
-             0.0, -1.0,  0.0,     
-             0.0, -1.0,  0.0,     
-             0.0, -1.0,  0.0,     
-             0.0, -1.0,  0.0, 
+             0.0,  0.0,  -1.0,     
+             0.0,  0.0,  -1.0,     
+             0.0,  0.0,  -1.0,     
+             0.0,  0.0,  -1.0, 
             // Bottom face
-             0.0,  1.0,  0.0,
-             0.0,  1.0,  0.0,
-             0.0,  1.0,  0.0,
-             0.0,  1.0,  0.0,
+             0.0,  0.0,  1.0,
+             0.0,  0.0,  1.0,
+             0.0,  0.0,  1.0,
+             0.0,  0.0,  1.0,
             // Right face
              0.0, -1.0,  0.0,     
              0.0, -1.0,  0.0,     
@@ -420,11 +428,9 @@
              0.0,  1.0,  0.0,
              0.0,  1.0,  0.0
         ];
-        vertexTangentBuffer = gl.createBuffer();
-        vertexTangentBuffer.itemSize = 3;
-        vertexTangentBuffer.numItems = 4;
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexTangentBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tangents), gl.STATIC_DRAW);
+        cubeVertexTangentBuffer.itemSize = 3;
+        cubeVertexTangentBuffer.numItems = 24;
 
         cubeVertexTextureCoordBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
@@ -504,15 +510,18 @@
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexNormalBuffer);
         gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, cubeVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTangentBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexTangentAttribute, cubeVertexTangentBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
         gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, cubeVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
         gl.activeTexture(gl.TEXTURE0);
-        gl.uniform1i(shaderProgram.samplerUniform, 0);
+        // gl.uniform1i(shaderProgram.samplerUniform, 0);
         gl.uniform1i(shaderProgram.useLightingUniform, true);
-        gl.uniform3f(shaderProgram.ambientColorUniform, 0.1, 0.1, 0.1);
+        gl.uniform3f(shaderProgram.ambientColorUniform, 0.5, 0.5, 0.5);
 
-        var lightingDirection = [-0.25, -0.25, -1];
+        var lightingDirection = [ -0.25, -0.25, -1.0];;
         var adjustedLD = vec3.create();
         vec3.normalize(lightingDirection, adjustedLD);
         vec3.scale(adjustedLD, -1);
@@ -532,7 +541,7 @@
         gl.bindTexture(gl.TEXTURE_2D, tex1);
         gl.uniform1i(shaderProgram.tex1, 1);
 
-        gl.uniform1f( shaderProgram.materialShininess, 30.0);
+        gl.uniform1f( shaderProgram.materialShininess, 3.0);
         gl.uniform3f( shaderProgram.lightColorSpecular, 0.9, 0.9, 0.9);
         gl.uniform3f( shaderProgram.lightColorDiffuse, 0.1, 0.1, 0.1);
 
