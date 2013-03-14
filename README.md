@@ -1,13 +1,8 @@
 Advanced Graphics Homework
 ===============
 
-WebCam Filters
+Normal Mapping With Textures
 
 
 
-press the arrow keys to switch the filters
-
-Down  - No Filter
-Up    - Filters based on color 
-Left  - Blur/pixelate
-Right - Inverse edge Detection(ish)
+use the arrow keys to rotate box
