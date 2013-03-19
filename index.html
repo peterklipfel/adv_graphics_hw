@@ -192,6 +192,7 @@
 
     var tilt = 90;
     var spin = 0;
+    var th = 0;
 
 
     function handleKeys() {
@@ -210,6 +211,14 @@
         if (currentlyPressedKeys[40]) {
             // Down cursor key
             tilt -= 2;
+        }
+        if (currentlyPressedKeys[37]) {
+            // Left cursor key
+            th -= 2;
+        }
+        if (currentlyPressedKeys[39]) {
+            // Right cursor key
+            th += 2;
         }
     }
 
@@ -270,7 +279,7 @@
         this.randomiseColors();
     }
 
-    Star.prototype.draw = function (tilt, spin) {
+    Star.prototype.draw = function (th, tilt, spin) {
         mvPushMatrix();
 
         // Move to the star's position
@@ -280,6 +289,7 @@
         // Rotate back so that the star is facing the viewer
         mat4.rotate(mvMatrix, degToRad(-this.angle), [0.0, 1.0, 0.0]);
         mat4.rotate(mvMatrix, degToRad(-tilt), [1.0, 0.0, 0.0]);
+        mat4.rotate(mvMatrix, degToRad(th), [0.0, 0.0, 1.0]);
 
         
         // Draw a non-rotating star in the alternate "twinkling" color
@@ -352,9 +362,10 @@
         mat4.identity(mvMatrix);
         mat4.translate(mvMatrix, [0.0, 0.0, zoom]);
         mat4.rotate(mvMatrix, degToRad(tilt), [1.0, 0.0, 0.0]);
+        mat4.rotate(mvMatrix, degToRad(th), [0.0, 0.0, 1.0]);
 
         for (var i in stars) {
-            stars[i].draw(tilt, spin);
+            stars[i].draw(th, tilt, spin);
             spin += 0.1;
         }
 
