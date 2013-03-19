@@ -348,10 +348,13 @@
 
 
 
-    function Star(startingDistance, rotationSpeed) {
+    function Star(velocity, rotationSpeed) {
         this.angle = 0;
-        this.dist = startingDistance;
+        this.vel = velocity;
         this.rotationSpeed = rotationSpeed;
+        this.x = 0;
+        this.y = 0;
+        this.z = 0;
 
         // Set the colors to a starting value.
         this.randomiseColors();
@@ -362,7 +365,7 @@
 
         // Move to the star's position
         mat4.rotate(mvMatrix, degToRad(this.angle), [0.0, 1.0, 0.0]);
-        mat4.translate(mvMatrix, [this.dist, 0.0, 0.0]);
+        mat4.translate(mvMatrix, [this.x, this.y + 0.0, this.z + 0.0]);
 
         // Rotate back so that the star is facing the viewer
         mat4.rotate(mvMatrix, degToRad(-this.angle), [0.0, 1.0, 0.0]);
@@ -388,14 +391,13 @@
     var effectiveFPMS = 60 / 1000;
     Star.prototype.animate = function (elapsedTime) {
         this.angle += this.rotationSpeed * effectiveFPMS * elapsedTime;
+        this.vel = Math.sin(elapsedTime*effectiveFPMS/1000.0)/this.vel;
 
-        // Decrease the distance, resetting the star to the outside of
-        // the spiral if it's at the center.
-        this.dist -= 0.01 * effectiveFPMS * elapsedTime;
-        if (this.dist < 0.0) {
-            this.dist += 5.0;
-            this.randomiseColors();
-        }
+        // this.vel -= 0.01 * effectiveFPMS * elapsedTime;
+
+        this.x = this.x+Math.sin(this.vel/10.0-this.x/30.0)
+        this.y = this.y+Math.sin(this.vel/10.0-this.y/40.0)
+        this.z = this.z+Math.sin(this.vel/10.0-(this.x+this.y)/70.0)
 
     };
 
@@ -439,12 +441,12 @@
 
         mat4.identity(mvMatrix);
         mat4.translate(mvMatrix, [0.0, 0.0, zoom]);
+        mat4.rotate(mvMatrix, degToRad(th), [0.0, 1.0, 0.0]);
         mat4.rotate(mvMatrix, degToRad(tilt), [1.0, 0.0, 0.0]);
-        mat4.rotate(mvMatrix, degToRad(th), [0.0, 0.0, 1.0]);
 
         for (var i in stars) {
             stars[i].draw(th, tilt, spin);
-            spin += 0.1;
+            spin += 0.5;
         }
 
     }
