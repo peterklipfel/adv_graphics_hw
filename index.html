@@ -2,7 +2,7 @@
 <html>
 
 <head>
-<title>Bump Mapping</title>
+<title>Learning WebGL &mdash; lesson 9</title>
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
 
 <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
@@ -12,83 +12,29 @@
     precision mediump float;
 
     varying vec2 vTextureCoord;
-    varying vec3 vNormalInEyeSpace;
-    varying vec3 vTangentInEyeSpace;
-    varying vec4 vPosition;
 
-    varying vec3 vLightWeighting;
+    uniform sampler2D uSampler;
 
-    uniform sampler2D uTex0;
-    uniform sampler2D uTex1;
-
-    uniform float uMaterialShininess;
-    uniform vec3 uAmbientColor;
-    uniform vec3 uLightColorSpecular;
-    uniform vec3 uLightColorDiffuse;
-    uniform vec3 uLightPos;
-
+    uniform vec3 uColor;
 
     void main(void) {
-        // scale texture coords so it looks nice
-        vec2 texCoord = vec2(vTextureCoord.s, vTextureCoord.t);  
-        vec4 diffuse = texture2D(uTex0, texCoord).rgba;
-            
-        // convert [0,1] to [-1,1]
-        vec3 normalT = normalize( 2.0 * ( texture2D(uTex1, texCoord).xyz - 0.5 ).xyz ); 
-        
-        vec3 binormal = cross(vNormalInEyeSpace, vTangentInEyeSpace);
-        vec3 normal = normalT.x * vTangentInEyeSpace + 
-                      normalT.y * binormal + 
-                      normalT.z * vNormalInEyeSpace;
-
-        normal = normalize(normal);
-    
-        // calculations are done in eye space
-        vec3 eyeDirection   = normalize(-vPosition.xyz);
-        vec3 lightDirection = normalize(uLightPos - vPosition.xyz);            
-        vec3 reflectionDirection = reflect(-lightDirection, normal);
-        
-        float kSpecular = pow(max(dot(reflectionDirection, eyeDirection), 0.0), uMaterialShininess);
-        float kDiffuse = max(dot(normal, lightDirection), 0.0);
-
-        vec3 kLight = uAmbientColor + uLightColorSpecular * kSpecular + uLightColorDiffuse  * kDiffuse;
-        gl_FragColor = vec4(diffuse.rgb * kLight, diffuse.a);
+        vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+        gl_FragColor = textureColor * vec4(uColor, 1.0);
     }
 </script>
 
 <script id="shader-vs" type="x-shader/x-vertex">
     attribute vec3 aVertexPosition;
-    attribute vec3 aVertexNormal;
-    attribute vec3 aTangent;
     attribute vec2 aTextureCoord;
 
     uniform mat4 uMVMatrix;
     uniform mat4 uPMatrix;
-    uniform mat3 uNMatrix;
 
-    uniform vec3 uAmbientColor;
-
-    uniform vec3 uLightingDirection;
-    uniform vec3 uDirectionalColor;
     varying vec2 vTextureCoord;
-    varying vec3 vLightWeighting;
-
-    varying vec3 vNormalInEyeSpace;
-    varying vec3 vTangentInEyeSpace;
-    varying vec4 vPosition;
 
     void main(void) {
-       vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
-        gl_Position = uPMatrix * vPosition;
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
         vTextureCoord = aTextureCoord;
-    
-      // transform normal and tangent to eye space using the normalMatrix
-      vNormalInEyeSpace = uNMatrix * aVertexNormal;
-      vTangentInEyeSpace = uNMatrix * aTangent;
-
-      vec3 transformedNormal = uNMatrix * aVertexNormal;
-      float directionalLightWeighting = max(dot(transformedNormal, uLightingDirection), 0.0);
-      vLightWeighting = uAmbientColor + uDirectionalColor * directionalLightWeighting;
     }
 </script>
 
@@ -96,7 +42,6 @@
 <script type="text/javascript">
 
     var gl;
-    var tex0, tex1;
 
     function initGL(canvas) {
         try {
@@ -167,55 +112,37 @@
         shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
         gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
-        shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
-        gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
-
-        shaderProgram.vertexTangentAttribute = gl.getAttribLocation(shaderProgram, "aTangent");
-        gl.enableVertexAttribArray(shaderProgram.vertexTangentAttribute);
-
         shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
         gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
 
         shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
         shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-        shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
-        // shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
-        shaderProgram.useLightingUniform = gl.getUniformLocation(shaderProgram, "uUseLighting");
-        shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, "uAmbientColor");
-        shaderProgram.lightingDirectionUniform = gl.getUniformLocation(shaderProgram, "uLightingDirection");
-        shaderProgram.directionalColorUniform = gl.getUniformLocation(shaderProgram, "uDirectionalColor");
-        shaderProgram.tex0 = gl.getUniformLocation(shaderProgram, "uTex0");
-        shaderProgram.tex1 = gl.getUniformLocation(shaderProgram, "uTex1");
-        shaderProgram.lightColorSpecular = gl.getUniformLocation(shaderProgram, "uLightColorSpecular");
-        shaderProgram.lightColorDiffuse = gl.getUniformLocation(shaderProgram, "uLightColorDiffuse");
-        shaderProgram.materialShininess = gl.getUniformLocation(shaderProgram, "uMaterialShininess");
+        shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+        shaderProgram.colorUniform = gl.getUniformLocation(shaderProgram, "uColor");
     }
-
 
 
     function handleLoadedTexture(texture) {
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
         gl.bindTexture(gl.TEXTURE_2D, null);
     }
 
 
+    var starTexture;
+
     function initTexture() {
-        tex0 = gl.createTexture();
-        tex0.image = new Image();
-        tex0.image.onload = function () { handleLoadedTexture(tex0) }
-        tex0.image.src = "3crates/crate1/crate1_diffuse.png";
-    
-        tex1 = gl.createTexture();
-        tex1.image = new Image();
-        tex1.image.onload = function () { handleLoadedTexture(tex1) }
-        tex1.image.src = "3crates/crate1/crate1_normal.png";
+        starTexture = gl.createTexture();
+        starTexture.image = new Image();
+        starTexture.image.onload = function () {
+            handleLoadedTexture(starTexture)
+        }
+
+        starTexture.image.src = "star.gif";
     }
 
 
@@ -240,27 +167,12 @@
     function setMatrixUniforms() {
         gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
         gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
-
-        var normalMatrix = mat3.create();
-        mat4.toInverseMat3(mvMatrix, normalMatrix);
-        mat3.transpose(normalMatrix);
-        gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
     }
 
 
     function degToRad(degrees) {
         return degrees * Math.PI / 180;
     }
-
-
-
-    var xRot = 0;
-    var ph = 3;
-
-    var yRot = 0;
-    var th = -3;
-
-    var z = -5.0;
 
 
     var currentlyPressedKeys = {};
@@ -275,219 +187,156 @@
     }
 
 
+    var zoom = -15;
+
+
+    var tilt = 90;
+    var spin = 0;
+
+
     function handleKeys() {
         if (currentlyPressedKeys[33]) {
             // Page Up
-            z -= 0.05;
+            zoom -= 0.1;
         }
         if (currentlyPressedKeys[34]) {
             // Page Down
-            z += 0.05;
-        }
-        if (currentlyPressedKeys[37]) {
-            // Left cursor key
-            th -= 1;
-        }
-        if (currentlyPressedKeys[39]) {
-            // Right cursor key
-            th += 1;
+            zoom += 0.1;
         }
         if (currentlyPressedKeys[38]) {
             // Up cursor key
-            ph -= 1;
+            tilt += 2;
         }
         if (currentlyPressedKeys[40]) {
             // Down cursor key
-            ph += 1;
+            tilt -= 2;
         }
     }
 
-    var cubeVertexPositionBuffer;
-    var cubeVertexNormalBuffer;
-    var cubeVertexTextureCoordBuffer;
-    var cubeVertexIndexBuffer;
+
+    var starVertexPositionBuffer;
+    var starVertexTextureCoordBuffer;
 
     function initBuffers() {
-        cubeVertexPositionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
+        starVertexPositionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, starVertexPositionBuffer);
         vertices = [
-            // Front face
-            -1.0, -1.0,  1.0,
-             1.0, -1.0,  1.0,
-             1.0,  1.0,  1.0,
-            -1.0,  1.0,  1.0,
-
-            // Back face
-            -1.0, -1.0, -1.0,
-            -1.0,  1.0, -1.0,
-             1.0,  1.0, -1.0,
-             1.0, -1.0, -1.0,
-
-            // Top face
-            -1.0,  1.0, -1.0,
-            -1.0,  1.0,  1.0,
-             1.0,  1.0,  1.0,
-             1.0,  1.0, -1.0,
-
-            // Bottom face
-            -1.0, -1.0, -1.0,
-             1.0, -1.0, -1.0,
-             1.0, -1.0,  1.0,
-            -1.0, -1.0,  1.0,
-
-            // Right face
-             1.0, -1.0, -1.0,
-             1.0,  1.0, -1.0,
-             1.0,  1.0,  1.0,
-             1.0, -1.0,  1.0,
-
-            // Left face
-            -1.0, -1.0, -1.0,
-            -1.0, -1.0,  1.0,
-            -1.0,  1.0,  1.0,
-            -1.0,  1.0, -1.0,
+            -1.0, -1.0,  0.0,
+             1.0, -1.0,  0.0,
+            -1.0,  1.0,  0.0,
+             1.0,  1.0,  0.0
         ];
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-        cubeVertexPositionBuffer.itemSize = 3;
-        cubeVertexPositionBuffer.numItems = 24;
+        starVertexPositionBuffer.itemSize = 3;
+        starVertexPositionBuffer.numItems = 4;
 
-        cubeVertexNormalBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexNormalBuffer);
-        var vertexNormals = [
-            // Front face
-             0.0,  0.0,  1.0,
-             0.0,  0.0,  1.0,
-             0.0,  0.0,  1.0,
-             0.0,  0.0,  1.0,
-
-            // Back face
-             0.0,  0.0, -1.0,
-             0.0,  0.0, -1.0,
-             0.0,  0.0, -1.0,
-             0.0,  0.0, -1.0,
-
-            // Top face
-             0.0,  1.0,  0.0,
-             0.0,  1.0,  0.0,
-             0.0,  1.0,  0.0,
-             0.0,  1.0,  0.0,
-
-            // Bottom face
-             0.0, -1.0,  0.0,
-             0.0, -1.0,  0.0,
-             0.0, -1.0,  0.0,
-             0.0, -1.0,  0.0,
-
-            // Right face
-             1.0,  0.0,  0.0,
-             1.0,  0.0,  0.0,
-             1.0,  0.0,  0.0,
-             1.0,  0.0,  0.0,
-
-            // Left face
-            -1.0,  0.0,  0.0,
-            -1.0,  0.0,  0.0,
-            -1.0,  0.0,  0.0,
-            -1.0,  0.0,  0.0
-        ];
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
-        cubeVertexNormalBuffer.itemSize = 3;
-        cubeVertexNormalBuffer.numItems = 24;
-
-        cubeVertexTangentBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTangentBuffer);
-        var tangents = [ 
-            // Front Face
-            -1.0, 0.0, 0.0,
-            -1.0, 0.0, 0.0,
-            -1.0, 0.0, 0.0,
-            -1.0, 0.0, 0.0,
-            // Back face
-             1.0, 0.0, 0.0,
-             1.0, 0.0, 0.0,
-             1.0, 0.0, 0.0,
-             1.0, 0.0, 0.0,
-            // Top Face
-             0.0,  0.0,  -1.0,     
-             0.0,  0.0,  -1.0,     
-             0.0,  0.0,  -1.0,     
-             0.0,  0.0,  -1.0, 
-            // Bottom face
-             0.0,  0.0,  1.0,
-             0.0,  0.0,  1.0,
-             0.0,  0.0,  1.0,
-             0.0,  0.0,  1.0,
-            // Right face
-             0.0, -1.0,  0.0,     
-             0.0, -1.0,  0.0,     
-             0.0, -1.0,  0.0,     
-             0.0, -1.0,  0.0,     
-            // Left face
-             0.0,  1.0,  0.0,
-             0.0,  1.0,  0.0,
-             0.0,  1.0,  0.0,
-             0.0,  1.0,  0.0
-        ];
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tangents), gl.STATIC_DRAW);
-        cubeVertexTangentBuffer.itemSize = 3;
-        cubeVertexTangentBuffer.numItems = 24;
-
-        cubeVertexTextureCoordBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
+        starVertexTextureCoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, starVertexTextureCoordBuffer);
         var textureCoords = [
-            // Front face
             0.0, 0.0,
             1.0, 0.0,
-            1.0, 1.0,
             0.0, 1.0,
-
-            // Back face
-            1.0, 0.0,
-            1.0, 1.0,
-            0.0, 1.0,
-            0.0, 0.0,
-
-            // Top face
-            0.0, 1.0,
-            0.0, 0.0,
-            1.0, 0.0,
-            1.0, 1.0,
-
-            // Bottom face
-            1.0, 1.0,
-            0.0, 1.0,
-            0.0, 0.0,
-            1.0, 0.0,
-
-            // Right face
-            1.0, 0.0,
-            1.0, 1.0,
-            0.0, 1.0,
-            0.0, 0.0,
-
-            // Left face
-            0.0, 0.0,
-            1.0, 0.0,
-            1.0, 1.0,
-            0.0, 1.0
+            1.0, 1.0
         ];
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
-        cubeVertexTextureCoordBuffer.itemSize = 2;
-        cubeVertexTextureCoordBuffer.numItems = 24;
+        starVertexTextureCoordBuffer.itemSize = 2;
+        starVertexTextureCoordBuffer.numItems = 4;
+    }
 
-        cubeVertexIndexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
-        var cubeVertexIndices = [
-            0, 1, 2,      0, 2, 3,    // Front face
-            4, 5, 6,      4, 6, 7,    // Back face
-            8, 9, 10,     8, 10, 11,  // Top face
-            12, 13, 14,   12, 14, 15, // Bottom face
-            16, 17, 18,   16, 18, 19, // Right face
-            20, 21, 22,   20, 22, 23  // Left face
-        ];
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cubeVertexIndices), gl.STATIC_DRAW);
-        cubeVertexIndexBuffer.itemSize = 1;
-        cubeVertexIndexBuffer.numItems = 36;
+
+    function drawStar() {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, starTexture);
+        gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, starVertexTextureCoordBuffer);
+        gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, starVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, starVertexPositionBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, starVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        setMatrixUniforms();
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, starVertexPositionBuffer.numItems);
+    }
+
+
+
+    function Star(startingDistance, rotationSpeed) {
+        this.angle = 0;
+        this.dist = startingDistance;
+        this.rotationSpeed = rotationSpeed;
+
+        // Set the colors to a starting value.
+        this.randomiseColors();
+    }
+
+    Star.prototype.draw = function (tilt, spin) {
+        mvPushMatrix();
+
+        // Move to the star's position
+        mat4.rotate(mvMatrix, degToRad(this.angle), [0.0, 1.0, 0.0]);
+        mat4.translate(mvMatrix, [this.dist, 0.0, 0.0]);
+
+        // Rotate back so that the star is facing the viewer
+        mat4.rotate(mvMatrix, degToRad(-this.angle), [0.0, 1.0, 0.0]);
+        mat4.rotate(mvMatrix, degToRad(-tilt), [1.0, 0.0, 0.0]);
+
+        
+        // Draw a non-rotating star in the alternate "twinkling" color
+        gl.uniform3f(shaderProgram.colorUniform, this.twinkleR, this.twinkleG, this.twinkleB);
+        drawStar();
+
+        // All stars spin around the Z axis at the same rate
+        mat4.rotate(mvMatrix, degToRad(spin), [0.0, 0.0, 1.0]);
+
+        // Draw the star in its main color
+        gl.uniform3f(shaderProgram.colorUniform, this.r, this.g, this.b);
+        drawStar()
+
+        mvPopMatrix();
+    };
+
+
+    var effectiveFPMS = 60 / 1000;
+    Star.prototype.animate = function (elapsedTime) {
+        this.angle += this.rotationSpeed * effectiveFPMS * elapsedTime;
+
+        // Decrease the distance, resetting the star to the outside of
+        // the spiral if it's at the center.
+        this.dist -= 0.01 * effectiveFPMS * elapsedTime;
+        if (this.dist < 0.0) {
+            this.dist += 5.0;
+            this.randomiseColors();
+        }
+
+    };
+
+
+    Star.prototype.randomiseColors = function () {
+        // Give the star a random color for normal
+        // circumstances...
+        this.r = Math.random();
+        this.g = Math.random();
+        this.b = Math.random();
+
+        // When the star is twinkling, we draw it twice, once
+        // in the color below (not spinning) and then once in the
+        // main color defined above.
+        this.twinkleR = Math.random();
+        this.twinkleG = Math.random();
+        this.twinkleB = Math.random();
+    };
+
+
+
+    var stars = [];
+
+    function initWorldObjects() {
+        var numStars = 50;
+
+        for (var i=0; i < numStars; i++) {
+            stars.push(new Star((i / numStars) * 5.0, i / numStars));
+        }
     }
 
 
@@ -497,56 +346,18 @@
 
         mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
 
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+        gl.enable(gl.BLEND);
+
         mat4.identity(mvMatrix);
+        mat4.translate(mvMatrix, [0.0, 0.0, zoom]);
+        mat4.rotate(mvMatrix, degToRad(tilt), [1.0, 0.0, 0.0]);
 
-        mat4.translate(mvMatrix, [0.0, 0.0, z]);
+        for (var i in stars) {
+            stars[i].draw(tilt, spin);
+            spin += 0.1;
+        }
 
-        mat4.rotate(mvMatrix, degToRad(xRot), [1, 0, 0]);
-        mat4.rotate(mvMatrix, degToRad(yRot), [0, 1, 0]);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
-        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexNormalBuffer);
-        gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, cubeVertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTangentBuffer);
-        gl.vertexAttribPointer(shaderProgram.vertexTangentAttribute, cubeVertexTangentBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
-        gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, cubeVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-        gl.activeTexture(gl.TEXTURE0);
-        // gl.uniform1i(shaderProgram.samplerUniform, 0);
-        gl.uniform1i(shaderProgram.useLightingUniform, true);
-        gl.uniform3f(shaderProgram.ambientColorUniform, 0.5, 0.5, 0.5);
-
-        var lightingDirection = [ -0.25, -0.25, -1.0];;
-        var adjustedLD = vec3.create();
-        vec3.normalize(lightingDirection, adjustedLD);
-        vec3.scale(adjustedLD, -1);
-        gl.uniform3fv(shaderProgram.lightingDirectionUniform, adjustedLD);
-
-        gl.uniform3f(shaderProgram.directionalColorUniform, 1, 1, 1);
-
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
-
-        // diffuse map in texture unit 0
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, tex0);
-        gl.uniform1i(shaderProgram.tex0, 0);
-
-        // normal map in texture unit 1
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, tex1);
-        gl.uniform1i(shaderProgram.tex1, 1);
-
-        gl.uniform1f( shaderProgram.materialShininess, 3.0);
-        gl.uniform3f( shaderProgram.lightColorSpecular, 0.9, 0.9, 0.9);
-        gl.uniform3f( shaderProgram.lightColorDiffuse, 0.1, 0.1, 0.1);
-
-        setMatrixUniforms();
-        gl.drawElements(gl.TRIANGLES, cubeVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
     }
 
 
@@ -557,10 +368,12 @@
         if (lastTime != 0) {
             var elapsed = timeNow - lastTime;
 
-            xRot = ph;
-            yRot = th;
+            for (var i in stars) {
+                stars[i].animate(elapsed);
+            }
         }
         lastTime = timeNow;
+
     }
 
 
@@ -572,17 +385,18 @@
     }
 
 
+
     function webGLStart() {
-        var canvas = document.getElementById("lesson07-canvas");
-        canvas.width = document.width;
-        canvas.height = document.height;
+        var canvas = document.getElementById("lesson09-canvas");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
         initGL(canvas);
         initShaders();
         initBuffers();
         initTexture();
+        initWorldObjects();
 
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        gl.enable(gl.DEPTH_TEST);
 
         document.onkeydown = handleKeyDown;
         document.onkeyup = handleKeyUp;
@@ -595,9 +409,9 @@
 
 </head>
 
-
 <body onload="webGLStart();" style="margin: 0; overflow: hidden;">
-    <canvas id="lesson07-canvas" style="margin: 0; overflow: hidden;"></canvas>
+    <canvas id="lesson09-canvas" style="margin: 0; overflow: hidden;"></canvas>
+
 
 </body>
 
