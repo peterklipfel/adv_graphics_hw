@@ -365,7 +365,7 @@
 
         // Move to the star's position
         mat4.rotate(mvMatrix, degToRad(this.angle), [0.0, 1.0, 0.0]);
-        mat4.translate(mvMatrix, [this.x, this.y + 0.0, this.z + 0.0]);
+        mat4.translate(mvMatrix, [this.x, this.y, this.z]);
 
         // Rotate back so that the star is facing the viewer
         mat4.rotate(mvMatrix, degToRad(-this.angle), [0.0, 1.0, 0.0]);
@@ -391,13 +391,13 @@
     var effectiveFPMS = 60 / 1000;
     Star.prototype.animate = function (elapsedTime) {
         this.angle += this.rotationSpeed * effectiveFPMS * elapsedTime;
-        this.vel = Math.sin(elapsedTime*effectiveFPMS/1000.0)/this.vel;
+        // this.vel = Math.sin(elapsedTime*effectiveFPMS/1000.0)/this.vel;
 
         // this.vel -= 0.01 * effectiveFPMS * elapsedTime;
 
         this.x = this.x+Math.sin(this.vel/10.0-this.x/30.0)
-        this.y = this.y+Math.sin(this.vel/10.0-this.y/40.0)
-        this.z = this.z+Math.sin(this.vel/10.0-(this.x+this.y)/70.0)
+        this.y = this.y+Math.sin(this.vel/10.0-this.y/30.0)
+        this.z = this.z+Math.sin(this.vel/10.0-this.z/30.0)
 
     };
 
