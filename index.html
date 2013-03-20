@@ -396,8 +396,14 @@
         // this.vel -= 0.01 * effectiveFPMS * elapsedTime;
 
         this.x = this.x+Math.sin(this.vel/10.0-this.x/30.0)
-        this.y = this.y+Math.sin(this.vel/10.0-this.y/30.0)
-        this.z = this.z+Math.sin(this.vel/10.0-this.z/30.0)
+        this.y = this.y+Math.sin(this.vel/10.0)
+        this.z = this.z+Math.sin(this.vel/10.0)
+        if(this.z > 20.0 || this.z < -20.0){
+            this.z = -this.z
+        }
+        if(this.y > 20.0 || this.y < -20.0){
+            this.y = -this.y
+        }
 
     };
 
@@ -424,7 +430,9 @@
     function initWorldObjects() {
         var numStars = 50;
 
-        for (var i=0; i < numStars; i++) {
+        stars.push(new Star((3 / numStars) * 5.0, 0));
+
+        for (var i=1; i < numStars; i++) {
             stars.push(new Star((i / numStars) * 5.0, i / numStars));
         }
     }
