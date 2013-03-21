@@ -307,6 +307,7 @@
         mat4.rotate(mvMatrix, degToRad(-tilt), [1.0, 0.0, 0.0]);
         mat4.rotate(mvMatrix, degToRad(th), [0.0, 0.0, 1.0]);
 
+        mat4.rotate(mvMatrix, 1.0, [this.r, this.g, this.b]);
         
         // Draw a non-rotating star in the alternate "twinkling" color
         gl.uniform3f(shaderProgram.colorUniform, this.twinkleR, this.twinkleG, this.twinkleB);
@@ -314,7 +315,6 @@
 
         // All stars spin around the Z axis at the same rate
         mat4.rotate(mvMatrix, degToRad(spin), [0.0, 0.0, 1.0]);
-        mat4.rotate(mvMatrix, this.rotationSpeed/10.0, [0.7, 1.0, 0.3]);
 
         // Draw the star in its main color
         gl.uniform3f(shaderProgram.colorUniform, this.r, this.g, this.b);
