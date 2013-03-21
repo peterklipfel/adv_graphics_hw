@@ -235,40 +235,10 @@
              1.0, -1.0,  1.0,
              1.0,  1.0,  1.0,
             -1.0,  1.0,  1.0,
-
-            // Back face
-            -1.0, -1.0, -1.0,
-            -1.0,  1.0, -1.0,
-             1.0,  1.0, -1.0,
-             1.0, -1.0, -1.0,
-
-            // Top face
-            -1.0,  1.0, -1.0,
-            -1.0,  1.0,  1.0,
-             1.0,  1.0,  1.0,
-             1.0,  1.0, -1.0,
-
-            // Bottom face
-            -1.0, -1.0, -1.0,
-             1.0, -1.0, -1.0,
-             1.0, -1.0,  1.0,
-            -1.0, -1.0,  1.0,
-
-            // Right face
-             1.0, -1.0, -1.0,
-             1.0,  1.0, -1.0,
-             1.0,  1.0,  1.0,
-             1.0, -1.0,  1.0,
-
-            // Left face
-            -1.0, -1.0, -1.0,
-            -1.0, -1.0,  1.0,
-            -1.0,  1.0,  1.0,
-            -1.0,  1.0, -1.0,
         ];
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
         starVertexPositionBuffer.itemSize = 3;
-        starVertexPositionBuffer.numItems = 24;
+        starVertexPositionBuffer.numItems = 4;
         starVertexPositionBuffer.numItems = 4;
 
         starVertexTextureCoordBuffer = gl.createBuffer();
@@ -279,54 +249,19 @@
             1.0, 0.0,
             1.0, 1.0,
             0.0, 1.0,
-
-            // Back face
-            1.0, 0.0,
-            1.0, 1.0,
-            0.0, 1.0,
-            0.0, 0.0,
-
-            // Top face
-            0.0, 1.0,
-            0.0, 0.0,
-            1.0, 0.0,
-            1.0, 1.0,
-
-            // Bottom face
-            1.0, 1.0,
-            0.0, 1.0,
-            0.0, 0.0,
-            1.0, 0.0,
-
-            // Right face
-            1.0, 0.0,
-            1.0, 1.0,
-            0.0, 1.0,
-            0.0, 0.0,
-
-            // Left face
-            0.0, 0.0,
-            1.0, 0.0,
-            1.0, 1.0,
-            0.0, 1.0
         ];
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
         starVertexTextureCoordBuffer.itemSize = 2;
-        starVertexTextureCoordBuffer.numItems = 24;
+        starVertexTextureCoordBuffer.numItems = 4;
 
         starVertexIndexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, starVertexIndexBuffer);
         var starVertexIndices = [
             0, 1, 2,      0, 2, 3,    // Front face
-            4, 5, 6,      4, 6, 7,    // Back face
-            8, 9, 10,     8, 10, 11,  // Top face
-            12, 13, 14,   12, 14, 15, // Bottom face
-            16, 17, 18,   16, 18, 19, // Right face
-            20, 21, 22,   20, 22, 23  // Left face
         ];
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(starVertexIndices), gl.STATIC_DRAW);
         starVertexIndexBuffer.itemSize = 1;
-        starVertexIndexBuffer.numItems = 36;
+        starVertexIndexBuffer.numItems = 6;
     }
 
 
@@ -379,6 +314,7 @@
 
         // All stars spin around the Z axis at the same rate
         mat4.rotate(mvMatrix, degToRad(spin), [0.0, 0.0, 1.0]);
+        mat4.rotate(mvMatrix, this.rotationSpeed/10.0, [0.7, 1.0, 0.3]);
 
         // Draw the star in its main color
         gl.uniform3f(shaderProgram.colorUniform, this.r, this.g, this.b);
@@ -395,9 +331,11 @@
 
         // this.vel -= 0.01 * effectiveFPMS * elapsedTime;
 
+        var v = Math.sin(this.vel/10.0);
+
         this.x = this.x+Math.sin(this.vel/10.0-this.x/30.0)
-        this.y = this.y+Math.sin(this.vel/10.0)
-        this.z = this.z+Math.sin(this.vel/10.0)
+        this.y = this.y+v;
+        this.z = this.z+v;
         if(this.z > 20.0 || this.z < -20.0){
             this.z = -this.z
         }
@@ -428,7 +366,7 @@
     var stars = [];
 
     function initWorldObjects() {
-        var numStars = 50;
+        var numStars = 1000;
 
         stars.push(new Star((3 / numStars) * 5.0, 0));
 
