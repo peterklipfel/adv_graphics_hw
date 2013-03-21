@@ -1,8 +1,8 @@
 Advanced Graphics Homework
 ===============
 
-Normal Mapping With Textures
+Fun Particles
 
 
 
-use the arrow keys to rotate box
+use arrow keys to rotate through the space
